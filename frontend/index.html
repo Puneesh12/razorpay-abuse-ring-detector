@@ -41,10 +41,11 @@
   /* ── Hero: the liquid yellow slab ───────────────────────────────────── */
   .hero{
     background:var(--yellow);color:var(--void);
-    border-radius:0 0 90px 90px;
-    padding:44px var(--page-pad) 64px;
+    padding:44px var(--page-pad) 0;
     position:relative;
   }
+  .wave-divider{width:100%;height:90px;line-height:0;background:var(--yellow)}
+  .wave-divider svg{width:100%;height:100%;display:block}
   .hero-top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:56px}
   .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:15px;letter-spacing:-.2px}
   .brand-dot{width:9px;height:9px;border-radius:50%;background:var(--void)}
@@ -74,9 +75,10 @@
   .badge-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:32px}
   .trust-badge{
     display:inline-flex;align-items:center;gap:8px;
-    background:rgba(10,10,10,.08);border:1px solid rgba(10,10,10,.16);
-    border-radius:999px;padding:7px 16px;font-size:11.5px;font-weight:700;
+    background:rgba(10,10,10,.08);border:1px solid rgba(10,10,10,.18);
+    border-radius:999px;padding:7px 16px 7px 8px;font-size:11.5px;font-weight:700;
   }
+  .trust-badge .b-dot{width:7px;height:7px;border-radius:50%;background:var(--void);flex-shrink:0}
 
   /* ── Floating glass KPI strip — straddles hero/void boundary ────────── */
   .glass-float{
@@ -129,6 +131,28 @@
   .status-pill.queue_for_review{background:rgba(253,224,71,.16);color:var(--yellow)}
   .status-pill.no_action{background:rgba(255,255,255,.08);color:var(--muted)}
 
+  /* accuracy-card grid — white cards + score bar, on a yellow-to-void gradient */
+  .cluster-surface{
+    background:linear-gradient(150deg,var(--yellow) 0%,#8a7a2a 45%,var(--void) 100%);
+    border-radius:26px;padding:20px;margin:0 -4px;
+  }
+  .cluster-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+  .acc-card{background:#fff;color:var(--void);border-radius:18px;padding:16px;min-width:0;box-shadow:0 10px 28px rgba(0,0,0,.22);cursor:pointer;transition:transform .15s var(--ease);text-align:left;border:none;width:100%}
+  .acc-card:hover{transform:translateY(-3px)}
+  .acc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:14px}
+  .acc-id{font-family:var(--mono);font-size:11px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .acc-meta{font-size:9px;color:#8a8a8a;text-transform:uppercase;letter-spacing:.06em;text-align:right;white-space:nowrap}
+  .acc-meta b{display:block;color:#3a3a3a;font-weight:800;margin-bottom:2px}
+  .acc-row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px}
+  .acc-label{font-size:9.5px;color:#8a8a8a;text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+  .acc-value{font-family:var(--mono);font-size:13px;font-weight:800}
+  .acc-track{height:5px;border-radius:99px;background:#efefef;overflow:hidden;margin-bottom:12px}
+  .acc-fill{height:100%;border-radius:99px}
+  .acc-fill.priority_review{background:#ef4444}
+  .acc-fill.queue_for_review{background:#eab308}
+  .acc-fill.no_action{background:#c9c9c9}
+  .acc-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px}
+
   #detail{font-family:var(--mono);font-size:11.5px;max-height:440px;overflow:auto;line-height:1.7}
   .case-box{background:rgba(253,224,71,.06);border:1px solid rgba(253,224,71,.2);border-radius:18px;padding:14px;margin-bottom:14px;font-family:var(--font)}
   .case-box .tag{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--yellow);font-weight:800;margin-bottom:6px}
@@ -170,11 +194,14 @@
     <div class="hero-headline liquid-in" style="--stagger:.1s">Abuse rings, seen<br>before they cash out.</div>
     <div class="hero-sub liquid-in" style="--stagger:.18s">Accounts that look independent one at a time — connected by a shared device, payout account, or address the moment you draw the graph.</div>
     <div class="badge-row liquid-in" style="--stagger:.26s">
-      <span class="trust-badge">🛡 Strictly defense-only</span>
-      <span class="trust-badge">📊 Held-out evaluated</span>
-      <span class="trust-badge">👤 Human always decides</span>
+      <span class="trust-badge"><span class="b-dot"></span>Strictly defense-only</span>
+      <span class="trust-badge"><span class="b-dot"></span>Held-out evaluated</span>
+      <span class="trust-badge"><span class="b-dot"></span>Human always decides</span>
     </div>
   </div>
+</div>
+<div class="wave-divider">
+  <svg viewBox="0 0 1440 90" preserveAspectRatio="none"><path d="M0,20 C240,90 480,0 720,30 C960,60 1200,10 1440,45 L1440,90 L0,90 Z" fill="#0A0A0A"/></svg>
 </div>
 
 <div class="glass-float liquid-in" style="--stagger:.34s">
@@ -207,12 +234,11 @@
   </div>
 
   <div class="panel-glass liquid-in" style="margin-bottom:20px">
-    <div class="panel-head"><h2 class="panel-title">Flagged clusters — held-out test split</h2></div>
-    <div style="overflow-x:auto">
-      <table>
-        <thead><tr><th>Cluster</th><th>Size</th><th>Score</th><th>Action</th><th>Signal</th></tr></thead>
-        <tbody id="cluster-body"><tr><td colspan="5" class="empty">Run a detection pass to populate.</td></tr></tbody>
-      </table>
+    <div class="panel-head"><h2 class="panel-title">Flagged clusters — held-out test split</h2><span class="panel-note" id="cluster-summary"></span></div>
+    <div class="cluster-surface">
+      <div class="cluster-grid" id="cluster-body">
+        <div class="empty" style="grid-column:1/-1;color:#fff">Run a detection pass to populate.</div>
+      </div>
     </div>
   </div>
 
@@ -276,15 +302,33 @@ async function runDetection(){
 
   const body = document.getElementById("cluster-body");
   body.innerHTML = "";
-  graphData.clusters.sort((a,b) => b.abuse_score - a.abuse_score).forEach(c => {
-    const tr = document.createElement("tr");
-    tr.onclick = () => showClusterDetail(c.cluster_id);
-    tr.innerHTML = `
-      <td>${c.cluster_id}</td><td>${c.size}</td><td>${(c.abuse_score*100).toFixed(0)}%</td>
-      <td><span class="status-pill ${c.action}">${c.action.replace(/_/g,' ')}</span></td>
-      <td>refund ${(c.mean_refund_rate*100).toFixed(0)}% · burst ${c.registration_burstiness_hours.toFixed(0)}h</td>
+  const all = graphData.clusters.slice().sort((a,b) => b.abuse_score - a.abuse_score);
+  const flagged = all.filter(c => c.action !== "no_action");
+  const quiet = all.length - flagged.length;
+  document.getElementById("cluster-summary").textContent =
+    flagged.length + " flagged" + (quiet ? " · " + quiet + " scanned clean, no action" : "");
+
+  if(flagged.length === 0){
+    body.innerHTML = '<div class="empty" style="grid-column:1/-1;color:#fff">No clusters crossed the review threshold in this batch.</div>';
+  }
+  flagged.forEach(c => {
+    const score = Math.round(c.abuse_score*100);
+    const card = document.createElement("button");
+    card.type = "button"; card.className = "acc-card";
+    card.onclick = () => showClusterDetail(c.cluster_id);
+    card.innerHTML = `
+      <div class="acc-top">
+        <span class="acc-id">${c.cluster_id}</span>
+        <span class="acc-meta"><b>${c.size} accounts</b>burst ${c.registration_burstiness_hours.toFixed(0)}h</span>
+      </div>
+      <div class="acc-row"><span class="acc-label">Abuse score</span><span class="acc-value">${score}%</span></div>
+      <div class="acc-track"><div class="acc-fill ${c.action}" style="width:${score}%"></div></div>
+      <div class="acc-bottom">
+        <span class="status-pill ${c.action}" style="${c.action==='priority_review'?'background:#fde2e2;color:#dc2626':c.action==='queue_for_review'?'background:#fef3c7;color:#a16207':'background:#f0f0f0;color:#888'}">${c.action.replace(/_/g,' ')}</span>
+        <span style="font-size:11px;color:#8a8a8a">refund ${(c.mean_refund_rate*100).toFixed(0)}%</span>
+      </div>
     `;
-    body.appendChild(tr);
+    body.appendChild(card);
   });
 
   initSim();
