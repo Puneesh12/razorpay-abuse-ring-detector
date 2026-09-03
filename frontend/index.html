@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Abuse Ring Detector</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root{
+    --bg:#0b0f14; --panel:#121821; --border:#232d3b; --border-soft:#1a2230;
+    --text:#e7edf5; --muted:#8ea0b5; --muted-2:#5b6b80;
+    --brand:#3b82f6; --good:#22c55e; --good-bg:#123a1f;
+    --warn:#f59e0b; --warn-bg:#3a2c12; --bad:#ef4444; --bad-bg:#3a1414;
+    --r-md:10px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    --mono:'SF Mono',ui-monospace,Consolas,monospace;
+    --page-pad:24px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:13.5px;overflow-x:hidden}
+  header{padding:var(--sp-4) var(--page-pad);border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:var(--sp-3);position:sticky;top:0;background:var(--bg);z-index:10}
+  header h1{font-size:15px;margin:0;font-weight:600}
+  header .tag{color:var(--muted);font-size:12px}
+  button{background:var(--brand);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;min-height:38px}
+  button:hover{opacity:.9} button:disabled{opacity:.5;cursor:not-allowed}
+  .wrap{padding:var(--sp-5) var(--page-pad) var(--sp-6);max-width:1360px;margin:0 auto}
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:var(--sp-3);margin-bottom:var(--sp-5)}
+  .kpi{background:var(--panel);border:1px solid var(--border);border-radius:var(--r-md);padding:var(--sp-4);min-width:0}
+  .kpi .label{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+  .kpi .value{font-size:22px;font-weight:700}
+  .kpi .sub{color:var(--muted-2);font-size:11.5px;margin-top:4px}
+  .good{color:var(--good)} .bad{color:var(--bad)} .warn{color:var(--warn)}
+  .row{display:grid;grid-template-columns:1.4fr 1fr;gap:var(--sp-4);align-items:start}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--r-md);padding:var(--sp-4);margin-bottom:var(--sp-4);min-width:0}
+  .panel h2{font-size:12.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:0 0 var(--sp-3)}
+  #graph-wrap{position:relative;background:#080b0f;border-radius:8px;overflow:hidden}
+  canvas{display:block;width:100%;touch-action:none;cursor:grab}
+  .legend{display:flex;flex-wrap:wrap;gap:var(--sp-4);padding:var(--sp-3);font-size:11px;color:var(--muted);border-top:1px solid var(--border-soft)}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{text-align:left;color:var(--muted);font-weight:600;padding:5px 8px;border-bottom:1px solid var(--border);font-size:10.5px;text-transform:uppercase}
+  td{padding:5px 8px;border-bottom:1px solid var(--border-soft)}
+  tbody tr{cursor:pointer} tbody tr:hover{background:#171f2b}
+  .pill{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10.5px;font-weight:600}
+  .pill.priority_review{background:var(--bad-bg);color:var(--bad)}
+  .pill.queue_for_review{background:var(--warn-bg);color:var(--warn)}
+  .pill.no_action{background:#1a2230;color:var(--muted)}
+  #detail{font-family:var(--mono);font-size:11.5px;max-height:420px;overflow:auto;line-height:1.6}
+  .empty{color:var(--muted);padding:var(--sp-6);text-align:center;font-size:12.5px}
+  .footer-note{color:var(--muted);font-size:11px;margin-top:var(--sp-4);line-height:1.6}
+  .footer-note code{background:#171f2b;padding:1px 6px;border-radius:4px}
+  @media (max-width:960px){:root{--page-pad:16px}.kpis{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:860px){.row{grid-template-columns:1fr}}
+  @media (max-width:640px){button{width:100%}header{flex-direction:column;align-items:stretch}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Abuse Ring Detector <span class="tag">/ Razorpay AI Buildathon — Track 2</span></h1>
+  <button id="run-btn">Run Detection Pass</button>
+</header>
+<div class="wrap">
+  <div class="kpis" id="kpis">
+    <div class="kpi"><div class="label">Accounts scanned</div><div class="value" id="k-accounts">—</div><div class="sub">held-out test split</div></div>
+    <div class="kpi"><div class="label">Clusters found</div><div class="value" id="k-clusters">—</div><div class="sub">shared-attribute graph</div></div>
+    <div class="kpi"><div class="label">Precision / Recall</div><div class="value" id="k-pr">—</div><div class="sub">held-out test, cluster-level</div></div>
+    <div class="kpi"><div class="label">FP accounts vs. baseline</div><div class="value good" id="k-fp">—</div><div class="sub" id="k-fp-sub">—</div></div>
+    <div class="kpi"><div class="label">At-risk ₹ flagged</div><div class="value" id="k-loss">—</div><div class="sub">estimated, held-out test</div></div>
+  </div>
+
+  <div class="row">
+    <div class="panel">
+      <h2>Account graph — shared-attribute clusters</h2>
+      <div id="graph-wrap"><canvas id="graph-canvas" height="440"></canvas></div>
+      <div class="legend">
+        <span><i class="dot" style="background:#ef4444"></i>priority review</span>
+        <span><i class="dot" style="background:#f59e0b"></i>standard review</span>
+        <span><i class="dot" style="background:#5b6b80"></i>no action</span>
+        <span>Drag to rearrange · click a node or row to inspect</span>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Cluster detail <span id="detail-label" style="color:var(--muted);text-transform:none;font-weight:400"></span></h2>
+      <div id="detail"><div class="empty">Run a detection pass, then click a cluster (graph or table) to inspect its evidence.</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Flagged clusters — held-out test split</h2>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Cluster</th><th>Size</th><th>Abuse score</th><th>Action</th><th>Shared signal</th></tr></thead>
+        <tbody id="cluster-body"><tr><td colspan="5" class="empty">Run a detection pass to populate.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Evaluation summary — held-out test split</h2>
+    <div id="eval-body" class="empty">Loading /api/metrics…</div>
+  </div>
+
+  <div class="footer-note">
+    Strictly defense-only: this system never bans, freezes, or suspends an account — every action is either <code>no_action</code>, <code>queue_for_review</code>, or <code>priority_review</code>, decided by a deterministic policy (<code>backend/app/core/policy.py</code>). A human always makes the final call. See <code>docs/EVALUATION.md</code> for full methodology, including the honest small-test-set caveat.
+  </div>
+</div>
+
+<script>
+const API = "";
+const fmt = (n) => n == null ? "—" : "₹" + Number(n).toLocaleString("en-IN", {maximumFractionDigits:0});
+const pct = (n) => n == null ? "—" : (n*100).toFixed(1) + "%";
+let graphData = {nodes:[], edges:[], clusters:[]};
+let simNodes = [];
+
+async function loadMetrics(){
+  try{
+    const r = await fetch(API + "/api/metrics");
+    if(!r.ok) throw new Error("no metrics");
+    const m = await r.json();
+    document.getElementById("k-accounts").textContent = m.policy_run_test_split.n_accounts_wrongly_flagged + m.policy_run_test_split.n_accounts_correctly_flagged;
+    document.getElementById("k-clusters").textContent = m.dataset.n_clusters_found;
+    document.getElementById("k-pr").textContent = (m.detector_metrics.held_out_test.cluster_precision*100).toFixed(0) + "% / " + (m.detector_metrics.held_out_test.cluster_recall*100).toFixed(0) + "%";
+    document.getElementById("k-fp").textContent = m.policy_run_test_split.n_accounts_wrongly_flagged + " vs " + m.baseline_graph_only_test_split.n_accounts_wrongly_flagged;
+    document.getElementById("k-fp-sub").textContent = "₹" + m.comparison.fp_cost_reduction_inr.toLocaleString("en-IN") + " saved vs. graph-only baseline";
+    document.getElementById("k-loss").textContent = fmt(m.policy_run_test_split.estimated_loss_caught_inr);
+
+    const p = m.policy_run_test_split, b = m.baseline_graph_only_test_split, d = m.detector_metrics.held_out_test;
+    document.getElementById("eval-body").innerHTML = `
+      <table>
+        <thead><tr><th></th><th>Graph-only baseline</th><th>Classifier + policy</th></tr></thead>
+        <tbody>
+          <tr><td>Clusters flagged</td><td>${b.n_clusters_flagged}</td><td>${p.n_flagged}</td></tr>
+          <tr><td>Accounts wrongly flagged</td><td class="bad">${b.n_accounts_wrongly_flagged}</td><td class="good">${p.n_accounts_wrongly_flagged}</td></tr>
+          <tr><td>Accounts correctly flagged</td><td>${b.n_accounts_correctly_flagged}</td><td>${p.n_accounts_correctly_flagged}</td></tr>
+          <tr><td>False-positive cost</td><td class="bad">${fmt(b.false_positive_cost_inr)}</td><td class="good">${fmt(p.false_positive_cost_inr)}</td></tr>
+          <tr><td>Estimated at-risk ₹ caught</td><td>${fmt(b.estimated_loss_caught_inr)}</td><td>${fmt(p.estimated_loss_caught_inr)}</td></tr>
+          <tr><td>Cluster precision / recall (held-out)</td><td>${pct(b.cluster_precision)} / ${pct(b.cluster_recall)}</td><td>${pct(d.cluster_precision)} / ${pct(d.cluster_recall)}</td></tr>
+        </tbody>
+      </table>
+      <p class="footer-note">Honest caveat: the held-out test split contains only ${d.true_positive_clusters + d.false_negative_clusters} ground-truth ring cluster(s) — a small n. Directionally strong (full recall, large false-positive reduction) but not statistically robust at this dataset size. See <code>docs/EVALUATION.md</code>.</p>
+    `;
+  }catch(e){
+    document.getElementById("eval-body").innerHTML = '<div class="empty">No evaluation run yet. Run <code>python -m app.core.evaluation</code> in backend/.</div>';
+  }
+}
+
+async function runDetection(){
+  const btn = document.getElementById("run-btn");
+  btn.disabled = true; btn.textContent = "Scanning graph…";
+  const r = await fetch(API + "/api/graph?split=test&limit_clusters=25");
+  graphData = await r.json();
+  btn.disabled = false; btn.textContent = "Run Detection Pass";
+
+  const body = document.getElementById("cluster-body");
+  body.innerHTML = "";
+  graphData.clusters.sort((a,b) => b.abuse_score - a.abuse_score).forEach(c => {
+    const tr = document.createElement("tr");
+    tr.onclick = () => showClusterDetail(c.cluster_id);
+    tr.innerHTML = `
+      <td>${c.cluster_id}</td>
+      <td>${c.size}</td>
+      <td>${(c.abuse_score*100).toFixed(0)}%</td>
+      <td><span class="pill ${c.action}">${c.action.replace(/_/g,' ')}</span></td>
+      <td>refund ${(c.mean_refund_rate*100).toFixed(0)}% · burst ${c.registration_burstiness_hours.toFixed(0)}h</td>
+    `;
+    body.appendChild(tr);
+  });
+
+  initSim();
+  await loadMetrics();
+}
+
+async function showClusterDetail(clusterId){
+  document.getElementById("detail-label").textContent = "— " + clusterId;
+  const el = document.getElementById("detail");
+  el.innerHTML = '<div class="empty">Loading…</div>';
+  const r = await fetch(API + "/api/cluster/" + clusterId);
+  const d = await r.json();
+  el.innerHTML = `
+    <div><b>action:</b> ${d.action}</div>
+    <div style="margin-top:4px"><b>reason:</b> ${d.reason}</div>
+    <div style="margin-top:8px"><b>shared attributes:</b> ${d.shared_attributes.join(", ")}</div>
+    <div style="margin-top:8px"><b>features:</b></div>
+    <div style="margin-left:8px">${Object.entries(d.features).map(([k,v])=>`${k}: ${v}`).join("<br>")}</div>
+    <div style="margin-top:8px"><b>members (${d.members.length}):</b></div>
+    <div style="margin-left:8px">${d.members.map(m=>`${m.account_id} · refund ${(m.refund_rate*100).toFixed(0)}% · kyc ${m.kyc_verified}`).join("<br>")}</div>
+  `;
+}
+
+// ── lightweight self-contained force-directed layout (no external deps) ──
+let animId = null;
+function initSim(){
+  const canvas = document.getElementById("graph-canvas");
+  const wrap = document.getElementById("graph-wrap");
+  const W = wrap.clientWidth, H = 440;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext("2d");
+
+  const colorFor = (action) => action === "priority_review" ? "#ef4444" : action === "queue_for_review" ? "#f59e0b" : "#5b6b80";
+
+  simNodes = graphData.nodes.map((n,i) => ({
+    ...n, x: W/2 + (Math.random()-0.5)*W*0.7, y: H/2 + (Math.random()-0.5)*H*0.7, vx:0, vy:0,
+  }));
+  const nodeIndex = Object.fromEntries(simNodes.map((n,i)=>[n.id,i]));
+  const links = graphData.edges.map(e => ({s: nodeIndex[e.source], t: nodeIndex[e.target], weight: e.weight}))
+    .filter(l => l.s !== undefined && l.t !== undefined);
+
+  let dragging = null, offsetX=0, offsetY=0;
+  canvas.addEventListener("mousedown", (e) => {
+    const r = canvas.getBoundingClientRect();
+    const mx = e.clientX - r.left, my = e.clientY - r.top;
+    let closest = null, dist = 18;
+    simNodes.forEach(n => { const dd = Math.hypot(n.x-mx, n.y-my); if(dd < dist){dist=dd; closest=n;} });
+    if(closest){ dragging = closest; canvas.style.cursor = "grabbing"; }
+  });
+  canvas.addEventListener("mousemove", (e) => {
+    if(!dragging) return;
+    const r = canvas.getBoundingClientRect();
+    dragging.x = e.clientX - r.left; dragging.y = e.clientY - r.top;
+    dragging.vx = 0; dragging.vy = 0;
+  });
+  window.addEventListener("mouseup", () => { dragging = null; canvas.style.cursor = "grab"; });
+  canvas.addEventListener("click", (e) => {
+    const r = canvas.getBoundingClientRect();
+    const mx = e.clientX - r.left, my = e.clientY - r.top;
+    const hit = simNodes.find(n => Math.hypot(n.x-mx, n.y-my) < 10);
+    if(hit) showClusterDetail(hit.cluster_id);
+  });
+
+  if(animId) cancelAnimationFrame(animId);
+  function tick(){
+    // simple force layout: link springs + node repulsion + centering
+    simNodes.forEach(n => {
+      if(n === dragging) return;
+      let fx = (W/2 - n.x) * 0.0015, fy = (H/2 - n.y) * 0.0015;
+      simNodes.forEach(o => {
+        if(o === n) return;
+        const dx = n.x - o.x, dy = n.y - o.y;
+        const d2 = Math.max(dx*dx + dy*dy, 25);
+        const f = 260 / d2;
+        fx += dx * f; fy += dy * f;
+      });
+      n.vx = (n.vx + fx) * 0.82; n.vy = (n.vy + fy) * 0.82;
+    });
+    links.forEach(l => {
+      const a = simNodes[l.s], b = simNodes[l.t];
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      const target = 42;
+      const f = (dist - target) * 0.02 * Math.min(l.weight/3, 1.5);
+      const fx = (dx/dist) * f, fy = (dy/dist) * f;
+      if(a !== dragging){ a.vx += fx; a.vy += fy; }
+      if(b !== dragging){ b.vx -= fx; b.vy -= fy; }
+    });
+    simNodes.forEach(n => {
+      if(n === dragging) return;
+      n.x += n.vx; n.y += n.vy;
+      n.x = Math.max(12, Math.min(W-12, n.x));
+      n.y = Math.max(12, Math.min(H-12, n.y));
+    });
+
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle = "rgba(148,163,184,0.25)";
+    links.forEach(l => {
+      const a = simNodes[l.s], b = simNodes[l.t];
+      ctx.lineWidth = Math.min(l.weight/2, 3);
+      ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+    });
+    simNodes.forEach(n => {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, 7, 0, Math.PI*2);
+      ctx.fillStyle = colorFor(n.action);
+      ctx.fill();
+      if(n.is_ring){
+        ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.arc(n.x, n.y, 10, 0, Math.PI*2); ctx.stroke();
+      }
+    });
+    animId = requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+document.getElementById("run-btn").addEventListener("click", runDetection);
+loadMetrics();
+</script>
+</body>
+</html>
