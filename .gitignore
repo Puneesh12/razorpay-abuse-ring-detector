@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+data/*.db
+data/*.csv
+data/*.joblib
+data/*.json
+!data/.gitkeep
+.pytest_cache/
+.DS_Store
+node_modules/
