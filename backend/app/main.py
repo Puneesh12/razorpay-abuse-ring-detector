@@ -18,7 +18,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from .core import detector, policy
+from .core import detector, explain, policy
 from .core.graph import build_graph, find_clusters
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
@@ -123,12 +123,26 @@ def cluster_detail(cluster_id: str):
     scored = detector.score_clusters(clf, cluster_df).iloc[0]
     decision = policy.decide(scored["abuse_score"], scored["cluster_size"])
     members = accounts[accounts["account_id"].isin(match.member_ids)].to_dict("records")
+    shared_attrs = list({a for _, _, d in match.edges for a in d["attrs"]})
+    case_file = explain.explain(
+        cluster_id=cluster_id, abuse_score=float(scored["abuse_score"]), action=decision.action,
+        cluster_size=int(scored["cluster_size"]), shared_attributes=shared_attrs,
+        mean_refund_rate=float(scored["mean_refund_rate"]),
+        registration_burstiness_hours=float(scored["registration_burstiness_hours"]),
+        device_reuse_ratio=float(scored["device_reuse_ratio"]),
+        payout_reuse_ratio=float(scored["payout_reuse_ratio"]),
+        kyc_verified_ratio=float(scored["kyc_verified_ratio"]),
+    )
     return {
         "cluster_id": cluster_id, "abuse_score": round(float(scored["abuse_score"]), 4),
         "action": decision.action, "reason": decision.reason,
-        "features": {k: scored[k] for k in detector.FEATURES},
-        "members": members,
-        "shared_attributes": list({a for _, _, d in match.edges for a in d["attrs"]}),
+        "case_file": case_file["case_file"], "case_file_mode": case_file["mode"],
+        "features": {k: (scored[k].item() if hasattr(scored[k], "item") else scored[k]) for k in detector.FEATURES},
+        "members": [
+            {k: (v.item() if hasattr(v, "item") else v) for k, v in m.items()}
+            for m in members
+        ],
+        "shared_attributes": shared_attrs,
     }
 
 
