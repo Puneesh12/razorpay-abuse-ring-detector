@@ -111,7 +111,7 @@
   .wordmark{
     font-size:clamp(90px,17vw,260px);font-weight:900;letter-spacing:-.05em;line-height:.82;
     margin:0;text-transform:lowercase;
-    background:url('/assets/wordmark-frame-cropped.jpg') center/cover no-repeat;
+    background:linear-gradient(135deg,var(--yellow) 0%,#fff8d6 45%,var(--yellow) 100%);
     -webkit-background-clip:text;background-clip:text;
     color:transparent;-webkit-text-fill-color:transparent;
     display:inline-block;
@@ -199,7 +199,7 @@
 
 <div class="wordmark-section fade-in">
   <h2 class="wordmark">ring</h2>
-  <div class="wordmark-caption">the graph, from the actual detection pass above</div>
+  <div class="wordmark-caption">strictly defense-only. flags for a human. never bans.</div>
 </div>
 
 <footer>
@@ -218,9 +218,14 @@ async function loadTeaser(){
     const p = m.policy_run_test_split, b = m.baseline_graph_only_test_split, d = m.detector_metrics.held_out_test;
     document.getElementById("m-accounts").textContent = p.n_accounts_wrongly_flagged + p.n_accounts_correctly_flagged;
     document.getElementById("m-pr").textContent = (d.cluster_precision*100).toFixed(0) + "% / " + (d.cluster_recall*100).toFixed(0) + "%";
-    document.getElementById("m-fp").textContent = p.n_accounts_wrongly_flagged > 0
-      ? (b.n_accounts_wrongly_flagged / p.n_accounts_wrongly_flagged).toFixed(1) + "×"
-      : "—";
+    const fpEl = document.getElementById("m-fp");
+    if(p.n_accounts_wrongly_flagged > 0){
+      fpEl.textContent = (b.n_accounts_wrongly_flagged / p.n_accounts_wrongly_flagged).toFixed(1) + "×";
+    } else if(b.n_accounts_wrongly_flagged > 0){
+      fpEl.textContent = "0"; fpEl.nextElementSibling.textContent = "wrongly flagged (vs. " + b.n_accounts_wrongly_flagged + ")";
+    } else {
+      fpEl.textContent = "—";
+    }
     document.getElementById("m-loss").textContent = "₹" + Math.round(p.estimated_loss_caught_inr).toLocaleString("en-IN");
   }catch(e){
     document.getElementById("metrics-strip").style.display = "none";
