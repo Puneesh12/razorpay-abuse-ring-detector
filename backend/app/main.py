@@ -122,7 +122,11 @@ def cluster_detail(cluster_id: str):
     cluster_df = detector.build_cluster_table([match], accounts)
     scored = detector.score_clusters(clf, cluster_df).iloc[0]
     decision = policy.decide(scored["abuse_score"], scored["cluster_size"])
-    members = accounts[accounts["account_id"].isin(match.member_ids)].to_dict("records")
+    members_df = accounts[accounts["account_id"].isin(match.member_ids)]
+    members = [
+        {k: (None if isinstance(v, float) and pd.isna(v) else v) for k, v in row.items()}
+        for row in members_df.to_dict("records")
+    ]
     shared_attrs = list({a for _, _, d in match.edges for a in d["attrs"]})
     case_file = explain.explain(
         cluster_id=cluster_id, abuse_score=float(scored["abuse_score"]), action=decision.action,
