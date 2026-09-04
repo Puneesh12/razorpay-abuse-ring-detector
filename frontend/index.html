@@ -106,6 +106,18 @@
   .cta-section h2{font-size:clamp(26px,4vw,42px);font-weight:800;letter-spacing:-1px;margin:0 0 16px}
   .cta-section p{color:var(--muted);margin:0 0 30px}
 
+  /* ── Closing wordmark — real image from our own footage, clipped into type ── */
+  .wordmark-section{padding:40px var(--page-pad) 10px;overflow:hidden;text-align:center}
+  .wordmark{
+    font-size:clamp(90px,17vw,260px);font-weight:900;letter-spacing:-.05em;line-height:.82;
+    margin:0;text-transform:lowercase;
+    background:url('/assets/wordmark-frame.jpg') center 88%/cover no-repeat;
+    -webkit-background-clip:text;background-clip:text;
+    color:transparent;-webkit-text-fill-color:transparent;
+    display:inline-block;
+  }
+  .wordmark-caption{font-size:12px;color:var(--muted);margin-top:4px;letter-spacing:.04em}
+
   footer{border-top:1px solid var(--border);padding:28px var(--page-pad);text-align:center;color:var(--muted-2);font-size:11px}
   footer code{background:var(--surface);padding:1px 6px;border-radius:4px;font-family:var(--mono)}
 
@@ -138,12 +150,6 @@
     </p>
     <div class="hero-actions fade-in" style="--stagger:.16s">
       <a href="/app/" class="btn-primary">Open the live detector →</a>
-      <a href="#how" class="btn-ghost">How it works</a>
-    </div>
-    <div class="badge-row fade-in" style="--stagger:.22s">
-      <span class="trust-badge"><span class="dot"></span>Strictly defense-only</span>
-      <span class="trust-badge"><span class="dot"></span>Held-out evaluated</span>
-      <span class="trust-badge"><span class="dot"></span>Human always decides</span>
     </div>
   </div>
 </div>
@@ -174,14 +180,7 @@
   <div class="diff-grid">
     <div class="diff fade-in"><span class="tag">Vantage point</span><h3>Only Razorpay can see this</h3><p>The same device or payout account touching three unrelated merchants is invisible to any single merchant's fraud team — visible only to the platform sitting underneath all of them.</p></div>
     <div class="diff fade-in" style="--stagger:.06s"><span class="tag">Safety</span><h3>Strictly defense-only</h3><p>No ban, freeze, or suspend anywhere in the codebase. Every action is a review-queue decision. A human always makes the final call.</p></div>
-    <div class="diff fade-in" style="--stagger:.12s"><span class="tag">Honesty</span><h3>Real held-out numbers</h3><p>Precision, recall, and false-positive cost measured against a naive baseline on data the model never trained on — not a cherry-picked demo.</p></div>
-  </div>
-</section>
-
-<section>
-  <div class="honest fade-in">
-    <span class="tag">Said plainly, not hidden</span>
-    <p>The held-out test split in this demo contains a small number of ground-truth ring clusters — the direction of the result (full recall, large false-positive reduction) is strong, but not yet statistically robust at this dataset size. That's stated here and in <code>docs/EVALUATION.md</code>, not buried.</p>
+    <div class="diff fade-in" style="--stagger:.12s"><span class="tag">Honesty</span><h3>Real held-out numbers</h3><p>Precision, recall, and false-positive cost measured against a naive baseline on data the model never trained on — not a cherry-picked demo. (Small test-n, stated plainly in <code>docs/EVALUATION.md</code>, not hidden.)</p></div>
   </div>
 </section>
 
@@ -190,6 +189,11 @@
   <p>One click runs the full pipeline end to end on held-out data.</p>
   <a href="/app/" class="btn-primary">Open the live detector →</a>
 </section>
+
+<div class="wordmark-section fade-in">
+  <h2 class="wordmark">ring</h2>
+  <div class="wordmark-caption">the graph, from the actual detection pass above</div>
+</div>
 
 <footer>
   Built for the Razorpay AI Buildathon — Track 2, AI Risk Manager. Not an official Razorpay product. See <code>docs/GAP_ANALYSIS.md</code> and <code>docs/EVALUATION.md</code> for full methodology.
