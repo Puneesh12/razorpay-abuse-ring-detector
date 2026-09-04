@@ -151,9 +151,9 @@
   <div class="hero-overlay"></div>
   <div class="shell hero-inner">
     <div class="eyebrow fade-in">Razorpay AI Buildathon · Track 2 — AI Risk Manager</div>
-    <h1 class="fade-in" style="--stagger:.05s">Abuse rings, seen<br>before they cash out.</h1>
+    <h1 class="fade-in" style="--stagger:.05s">Fraud AI already blocks people.<br>Ours explains why first.</h1>
     <p class="hero-sub fade-in" style="--stagger:.1s">
-      Accounts that look independent one at a time — connected by a shared device, payout account, or address the moment you draw the graph. Strictly defense-only: it flags for a human, never bans.
+      Most auto-blocking fraud systems score a linked-account cluster and act — no evidence shown, no human in the loop. This one builds the same graph, but every output is a named, evidence-backed case file queued for a human. It never bans anyone on its own.
     </p>
     <div class="hero-actions fade-in" style="--stagger:.16s">
       <a href="/app/" class="btn-primary">Open the live detector →</a>
@@ -182,12 +182,34 @@
 
 <section>
   <div class="section-eyebrow">Why this isn't a clone</div>
-  <h2 class="section-title">Razorpay already ships fraud agents. Not this one.</h2>
-  <p class="section-sub">Agent Studio's Dispute Responder and Recovery agents work per-transaction, per-merchant. This is the layer underneath them.</p>
+  <h2 class="section-title">Razorpay already has Thirdwatch. We checked.</h2>
+  <p class="section-sub">Thirdwatch does device-cluster fraud detection with network effects across Razorpay's merchant base — and, as publicly described, automatically flags or blocks. That's the real comparison, not an empty field.</p>
   <div class="diff-grid">
-    <div class="diff fade-in"><span class="tag">Vantage point</span><h3>Only Razorpay can see this</h3><p>The same device or payout account touching three unrelated merchants is invisible to any single merchant's fraud team — visible only to the platform sitting underneath all of them.</p></div>
-    <div class="diff fade-in" style="--stagger:.06s"><span class="tag">Safety</span><h3>Strictly defense-only</h3><p>No ban, freeze, or suspend anywhere in the codebase. Every action is a review-queue decision. A human always makes the final call.</p></div>
-    <div class="diff fade-in" style="--stagger:.12s"><span class="tag">Honesty</span><h3>Real held-out numbers</h3><p>Precision, recall, and false-positive cost measured against a naive baseline on data the model never trained on — not a cherry-picked demo. (Small test-n, stated plainly in <code>docs/EVALUATION.md</code>, not hidden.)</p></div>
+    <div class="diff fade-in"><span class="tag">Action</span><h3>Auto-block vs. human review</h3><p>An auto-blocking system is disqualified by this track's own rule — "anything offense-capable" doesn't qualify. Every output here is <code>no_action</code>, <code>queue_for_review</code>, or <code>priority_review</code>. Nothing here can act on its own.</p></div>
+    <div class="diff fade-in" style="--stagger:.06s"><span class="tag">Transparency</span><h3>Black-box score vs. named case file</h3><p>Nothing public shows Thirdwatch producing an inspectable case file. This system names the specific accounts, the specific shared attribute, and writes the argument a human can independently check.</p></div>
+    <div class="diff fade-in" style="--stagger:.12s"><span class="tag">Honesty</span><h3>Published held-out numbers</h3><p>Precision, recall, and false-positive cost, measured against a naive baseline on data the model never trained on — including the small-test-n caveat, stated here and in <code>docs/EVALUATION.md</code>, not hidden.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="section-eyebrow">A real case, not a hypothetical</div>
+  <h2 class="section-title">Where a black-box auto-blocker gets it wrong.</h2>
+  <p class="section-sub">This is a genuine cluster from the held-out test split — not invented for this page.</p>
+  <div class="diff-grid" style="grid-template-columns:1fr">
+    <div class="diff fade-in">
+      <span class="tag">cluster_1147 · held-out test</span>
+      <h3>Three accounts, one shared address, spread over 17 months</h3>
+      <p style="margin-bottom:14px">Three accounts share a shipping address — nothing else. Different devices, different IPs, different payout accounts. They signed up <strong>43, 87, and 536 days apart</strong> — not a registration burst. Zero refunds across all three. Every account is fully KYC-verified.</p>
+      <p style="margin-bottom:14px">A naive "any shared attribute is suspicious" system — the graph-only baseline we measure against — flags this cluster like any other, because it only checks connection, not behaviour. A black-box auto-blocker with no visible reasoning could act on that flag directly.</p>
+      <p style="color:var(--good);font-weight:700;margin:0">This system's score: 0.0004% abuse probability → <code style="color:var(--good)">no_action</code>. Three people who happen to share an address were never touched.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="honest fade-in">
+    <span class="tag">Order-of-magnitude, not a measured figure</span>
+    <p>Razorpay's retail & e-commerce segment processes ~$110B/year. At an industry-average fraud-loss benchmark of 2.9% of revenue, even a conservative 3–10% share attributable to coordinated, linked-account abuse is <strong>₹800–2,650 crore/year</strong> of addressable exposure. Full math and sources in <code>docs/BUSINESS_CASE.md</code> — every input is cited, every assumption is labeled as an assumption.</p>
   </div>
 </section>
 
