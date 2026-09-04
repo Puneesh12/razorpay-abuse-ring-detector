@@ -54,7 +54,13 @@ class Account:
     is_ring_member: bool
 
 
-def generate_accounts(n_legit: int = 3600, n_rings: int = 28, seed: int = RNG_SEED) -> pd.DataFrame:
+def generate_accounts(n_legit: int = 24_000, n_rings: int = 260, seed: int = RNG_SEED) -> pd.DataFrame:
+    """Population scale note: the earlier default (3,600 legit / 28 rings)
+    produced a held-out test split containing only ~6 ring clusters. Reporting
+    precision/recall on n=6 cannot distinguish a good model from a lucky
+    sample. These defaults give roughly an order of magnitude more rings so
+    the test split carries enough positives for the metrics to mean something.
+    """
     rng = np.random.default_rng(seed)
     base_time = datetime(2026, 3, 1)
     rows: list[Account] = []
@@ -98,20 +104,49 @@ def generate_accounts(n_legit: int = 3600, n_rings: int = 28, seed: int = RNG_SE
         # IP -- don't make these mutually exclusive, or "how many attribute types are
         # shared" becomes its own giveaway feature the same way cluster_size was.
         share_ip = rng.random() < 0.45
+        # A household genuinely shares a device — the family tablet, one home
+        # desktop. Without this, device_reuse_ratio is identically 0.0 for every
+        # legitimate group, so "shares a device at all" becomes a perfect
+        # ring/legit discriminator and the model learns that instead of
+        # behaviour. This is the realistic hard case: a shared device is
+        # suspicious, but it is NOT proof.
+        share_device = rng.random() < 0.35
+        # Spouses on a joint account, a parent funding a child's account: a
+        # shared payout destination is genuinely legitimate sometimes. Without
+        # this, payout_reuse_ratio is identically 0.0 for legit groups and
+        # becomes the next perfect discriminator after device sharing was fixed.
+        share_payout = rng.random() < 0.22
         shared_addr = _hash_id("legitaddr", lg, seed)
         shared_ip = _hash_id("legitip", lg, seed)[:8]
-        # spread over months, NOT a registration burst — the actual tell
+        shared_legit_device = _hash_id("legitdev", lg, seed)
+        shared_legit_payout = _hash_id("legitpay", lg, seed)
+        # Registration spread for legitimate shared-context groups. Deliberately
+        # NOT always "spread over months": a family opening accounts the same
+        # evening, or an office onboarding a team in one batch, produces a tight
+        # burst that looks exactly like a ring on this feature alone. Without
+        # these, burstiness perfectly separates the classes and the model
+        # degenerates into a single threshold on it.
         base_signup = base_time - timedelta(days=int(rng.integers(30, 900)))
+        if rng.random() < 0.30:
+            legit_spread_hours = float(rng.uniform(2, 200))     # same-day/week signup
+        else:
+            legit_spread_hours = float(rng.uniform(200, 5760))  # spread over months
         for k in range(size):
-            signup = base_signup + timedelta(days=float(rng.uniform(-120, 120)))
+            signup = base_signup + timedelta(
+                hours=float(rng.uniform(-legit_spread_hours / 2, legit_spread_hours / 2))
+            )
             age = max(3.0, (base_time - signup).total_seconds() / 86400)
             orders = int(max(0, rng.poisson(6)))
-            refunds = int(min(orders, rng.binomial(orders, 0.06))) if orders else 0
+            # Legit refund propensity varies per group: most are low, but a
+            # genuine minority (returns-heavy shoppers, a fashion household)
+            # run high. A flat 6% made refund rate near-separable from rings.
+            legit_refund_p = float(min(0.55, abs(rng.normal(0.08, 0.11))))
+            refunds = int(min(orders, rng.binomial(orders, legit_refund_p))) if orders else 0
             rows.append(Account(
                 account_id=_hash_id("lgacct", idx, seed),
-                device_fingerprint=_hash_id("dev", idx, seed),
+                device_fingerprint=shared_legit_device if share_device else _hash_id("dev", idx, seed),
                 ip_subnet=shared_ip if share_ip else _hash_id("ip", idx, seed)[:8],
-                payout_account_hash=_hash_id("payout", idx, seed),
+                payout_account_hash=shared_legit_payout if share_payout else _hash_id("payout", idx, seed),
                 shipping_address_hash=shared_addr if share_addr else _hash_id("addr", idx, seed),
                 signup_date=signup.isoformat(),
                 account_age_days=round(age, 1),
@@ -132,7 +167,20 @@ def generate_accounts(n_legit: int = 3600, n_rings: int = 28, seed: int = RNG_SE
         ring_id = f"ring_{r}"
         size = int(rng.integers(3, 13))
         burst_center = base_time - timedelta(days=int(rng.integers(5, 260)))
-        burst_spread_hours = float(rng.uniform(1, 96))  # tight registration burst
+        # Registration spread. NOT a uniform tight burst: an earlier version used
+        # uniform(1, 96)h for every ring while legit groups spread over ±120 days,
+        # making the two ranges completely disjoint. The classifier then put 97%
+        # of its weight on this one feature and scored a meaningless perfect 1.00
+        # — a single `if burstiness < 200` rule matched it. Real rings vary: most
+        # are quick, but a substantial minority are deliberately slow-burn to
+        # evade exactly this signal. Heavy-tailed so the distributions OVERLAP
+        # with the legit groups below.
+        if rng.random() < 0.55:
+            burst_spread_hours = float(rng.uniform(1, 96))          # fast ring
+        elif rng.random() < 0.7:
+            burst_spread_hours = float(rng.uniform(96, 1200))       # days-to-weeks
+        else:
+            burst_spread_hours = float(rng.uniform(1200, 6000))     # slow-burn ring
 
         # which attributes this ring actually shares (not all rings share everything)
         share_device = rng.random() < 0.55

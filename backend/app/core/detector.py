@@ -28,8 +28,29 @@ FEATURES = [
 ]
 
 
-def _account_split(account_id: str) -> str:
-    h = int(hashlib.sha256(account_id.encode()).hexdigest(), 16) % 100
+def _cluster_split(member_ids: list[str]) -> str:
+    """Assign a split to the CLUSTER as a whole, by hashing its canonical
+    membership.
+
+    This replaces an earlier per-account hash + majority vote, which had two
+    real defects:
+
+    1. It starved the validation split. A cluster only landed in `val` if
+       >50% of its members individually hashed to val — but val was only 20%
+       of accounts, so that almost never happened. Result: 2 val clusters
+       (neither a ring), making validation metrics meaningless (all 0.0, AUC
+       null) while test got 35 from the same 20% allocation.
+
+    2. It leaked. A cluster whose majority hashed to `test` could still
+       contain train-split accounts, so cluster-level features were computed
+       partly from training data — the transductive-leakage caveat previously
+       documented in dataset.py.
+
+    Hashing the cluster's canonical identity fixes both: splits are ~60/20/20
+    over clusters, and every member of a cluster lands in exactly one split.
+    """
+    key = "|".join(sorted(member_ids))
+    h = int(hashlib.sha256(key.encode()).hexdigest(), 16) % 100
     if h < 60:
         return "train"
     if h < 80:
@@ -50,8 +71,7 @@ def cluster_features(cluster: Cluster, accounts: pd.DataFrame) -> dict:
     for _, _, d in cluster.edges:
         attr_types.update(d.get("attrs", []))
 
-    splits = [_account_split(a) for a in cluster.member_ids]
-    split = pd.Series(splits).mode().iloc[0]
+    split = _cluster_split(cluster.member_ids)
     label = int(members["is_ring_member"].mean() >= 0.5)
 
     return {

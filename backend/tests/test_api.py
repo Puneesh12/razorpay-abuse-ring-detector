@@ -46,7 +46,12 @@ def test_graph_endpoint_serializes(client):
 def test_cluster_detail_for_a_non_ring_cluster_does_not_500(client):
     """Regression test: non-ring accounts have ring_id=NaN in the CSV. The
     /api/cluster/{id} endpoint must convert that to JSON null, not crash."""
-    graph = client.get("/api/graph?split=all&limit_clusters=200").json()
+    # /api/graph returns clusters sorted by abuse_score DESC, so a small limit
+    # returns only high-scoring (ring) clusters once the dataset has more rings
+    # than the limit. Request enough to guarantee the low-scoring tail is
+    # included — otherwise this fixture silently breaks whenever the dataset
+    # grows, which is exactly what happened at 260 rings vs. limit=200.
+    graph = client.get("/api/graph?split=all&limit_clusters=5000").json()
     non_ring_clusters = [c["cluster_id"] for c in graph["clusters"] if not c["ground_truth_is_ring"]]
     assert non_ring_clusters, "test fixture should contain at least one non-ring cluster"
 

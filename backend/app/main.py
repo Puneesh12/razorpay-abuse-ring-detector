@@ -97,6 +97,14 @@ def graph_snapshot(split: str = "test", limit_clusters: int = 40):
                     "is_ring": bool(acct["is_ring_member"]),
                     "kyc_verified": bool(acct["kyc_verified"]),
                     "refund_rate": float(acct["refund_rate"]),
+                    # additive, non-breaking: real attribute VALUES, not just which
+                    # attribute types matched -- needed so the frontend can render
+                    # genuine Account -> Device/IP/Payout/Address entity nodes
+                    # instead of a plain account-to-account graph.
+                    "device_fingerprint": str(acct["device_fingerprint"]),
+                    "ip_subnet": str(acct["ip_subnet"]),
+                    "payout_account_hash": str(acct["payout_account_hash"]),
+                    "shipping_address_hash": str(acct["shipping_address_hash"]),
                 })
         sub = cluster_lookup[cid]
         for a, b, d in sub.edges:
