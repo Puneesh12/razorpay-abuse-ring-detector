@@ -126,29 +126,58 @@
   .empty{color:var(--muted);padding:24px 10px;text-align:center;font-size:11.5px}
 
   /* ── Onboarding — dismissible, explains the tool before the tool is used ── */
-  .onboard{
-    background:linear-gradient(135deg,rgba(253,224,71,.08),rgba(253,224,71,.02));
-    border:1px solid rgba(253,224,71,.25);border-radius:12px;
-    padding:18px 20px;margin-bottom:14px;
+  /* ── Onboarding MODAL — floats above everything, dimmed backdrop, real z-axis ── */
+  .modal-backdrop{
+    position:fixed;inset:0;z-index:1000;
+    background:rgba(0,0,0,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    display:flex;align-items:center;justify-content:center;padding:20px;
+    opacity:0;animation:backdropIn .25s var(--ease) forwards;
   }
-  .onboard-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
-  .onboard-top h2{font-size:14px;font-weight:800;margin:0 0 4px;color:var(--white)}
-  .onboard-top p{font-size:12px;color:var(--text-2);margin:0;max-width:560px;line-height:1.6}
-  .onboard-close{
-    background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;
-    padding:5px 12px;font-size:11px;font-weight:600;flex-shrink:0;white-space:nowrap;
-    transition:border-color .15s,color .15s;
+  @keyframes backdropIn{to{opacity:1}}
+  .modal-card{
+    position:relative;z-index:1001;width:100%;max-width:460px;
+    background:var(--surface);border:1px solid var(--border);border-radius:20px;
+    padding:28px 28px 22px;box-shadow:0 30px 80px rgba(0,0,0,.55);
+    transform:translateY(14px) scale(.98);opacity:0;
+    animation:modalIn .35s var(--ease) forwards;animation-delay:.05s;
   }
-  .onboard-close:hover{border-color:rgba(255,255,255,.3);color:var(--white)}
-  .onboard-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-  .onboard-step{display:flex;gap:10px;align-items:flex-start}
+  @keyframes modalIn{to{transform:translateY(0) scale(1);opacity:1}}
+  .modal-icon{
+    width:44px;height:44px;border-radius:12px;background:var(--yellow);
+    display:flex;align-items:center;justify-content:center;margin-bottom:18px;
+  }
+  .modal-card h2{font-size:19px;font-weight:800;margin:0 0 8px;color:var(--white);letter-spacing:-.3px}
+  .modal-card > p{font-size:12.5px;color:var(--muted);margin:0 0 22px;line-height:1.6}
+  .modal-label{font-size:11px;font-weight:700;color:var(--text-2);margin-bottom:10px}
+  .chip-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+  .chip{
+    display:inline-flex;align-items:center;gap:7px;
+    background:var(--surface-2);border:1px solid var(--border);border-radius:10px;
+    padding:9px 13px;font-size:12px;font-weight:600;color:var(--text-2);
+  }
+  .chip .dot{width:7px;height:7px;border-radius:50%}
+  .onboard-step{display:flex;gap:10px;align-items:flex-start;margin-bottom:13px}
+  .onboard-step:last-child{margin-bottom:0}
   .onboard-step .num{
-    width:22px;height:22px;border-radius:50%;background:var(--yellow);color:var(--void);
-    font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    width:20px;height:20px;border-radius:50%;background:var(--yellow);color:var(--void);
+    font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;
   }
-  .onboard-step .txt{font-size:11.5px;color:var(--text-2);line-height:1.5;padding-top:2px}
+  .onboard-step .txt{font-size:12.5px;color:var(--text-2);line-height:1.55}
   .onboard-step .txt b{color:var(--white)}
-  @media (max-width:760px){.onboard-steps{grid-template-columns:1fr}}
+  .modal-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:24px}
+  .modal-skip{
+    background:none;border:none;color:var(--muted);font-size:12px;font-weight:600;padding:10px 4px;
+    transition:color .15s;
+  }
+  .modal-skip:hover{color:var(--white)}
+  .modal-cta{
+    display:inline-flex;align-items:center;gap:8px;background:var(--yellow);color:var(--void);
+    border:none;border-radius:999px;padding:0 22px;height:42px;font-size:13px;font-weight:800;
+    transition:transform .15s var(--ease);
+  }
+  .modal-cta:hover{transform:translateY(-1px)}
+  .modal-cta:active{transform:translateY(0)}
+  @media (max-width:520px){.modal-card{padding:22px 20px 18px}}
 
   /* graph empty-state overlay */
   .graph-empty{
@@ -198,23 +227,37 @@
   <span>Strictly defense-only — every action is <b>no_action</b>, <b>queue_for_review</b>, or <b>priority_review</b></span>
 </div>
 
-<div class="workspace">
-
-  <div class="onboard fade-in" id="onboard">
-    <div class="onboard-top">
-      <div>
-        <h2>New here? This is what the tool does.</h2>
-        <p>It looks for accounts that are secretly connected — same device, bank payout account, or address — groups them, and scores whether the group's behaviour looks coordinated or just coincidental. It never blocks anyone; it only ever queues a case for a human to review.</p>
-      </div>
-      <button class="onboard-close" id="onboard-close" type="button">Got it, hide this</button>
+<div class="modal-backdrop" id="onboard-backdrop" style="display:none">
+  <div class="modal-card">
+    <div class="modal-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="12" cy="18" r="3"/>
+        <path d="M8.5 7.5L15.5 16.5M15.5 7.5L8.5 16.5"/>
+      </svg>
     </div>
-    <div class="onboard-steps">
-      <div class="onboard-step"><span class="num">1</span><span class="txt"><b>Click "Run Detection Pass"</b> above — it runs the real pipeline on held-out data, nothing is faked.</span></div>
-      <div class="onboard-step"><span class="num">2</span><span class="txt"><b>Watch the graph fill in</b> — each dot is an account, lines connect accounts that share something. Red = worth a priority look, yellow = standard review, grey = nothing suspicious.</span></div>
-      <div class="onboard-step"><span class="num">3</span><span class="txt"><b>Click any red or yellow dot</b> (or a row in "Flagged clusters") to see exactly why it was flagged — real evidence, not just a score.</span></div>
+    <h2>What does this tool actually do?</h2>
+    <p>It finds accounts that look independent but are secretly connected — then scores whether that connection looks coordinated, or just coincidence. It never blocks anyone; a human always makes the call.</p>
+
+    <div class="modal-label">You'll see three outcomes</div>
+    <div class="chip-grid">
+      <span class="chip"><span class="dot" style="background:#f87171"></span>Priority review</span>
+      <span class="chip"><span class="dot" style="background:#FDE047"></span>Standard review</span>
+      <span class="chip"><span class="dot" style="background:#5c5c5c"></span>No action</span>
+    </div>
+
+    <div class="modal-label">How to use it</div>
+    <div class="onboard-step"><span class="num">1</span><span class="txt"><b>Click "Run Detection Pass"</b> in the top bar — real pipeline, held-out data, nothing faked.</span></div>
+    <div class="onboard-step"><span class="num">2</span><span class="txt"><b>Watch the graph fill in</b> — each dot is an account, each line means two accounts share a device, bank account, or address.</span></div>
+    <div class="onboard-step"><span class="num">3</span><span class="txt"><b>Click any dot or flagged row</b> to see the real evidence behind the score.</span></div>
+
+    <div class="modal-footer">
+      <button class="modal-skip" id="onboard-skip" type="button">Skip</button>
+      <button class="modal-cta" id="onboard-start" type="button">Let's go →</button>
     </div>
   </div>
+</div>
 
+<div class="workspace">
   <div class="grid">
     <div>
       <div class="panel fade-in">
@@ -256,16 +299,21 @@ const fmt = (n) => n == null ? "—" : "₹" + Number(n).toLocaleString("en-IN",
 const pct = (n) => n == null ? "—" : (n*100).toFixed(1) + "%";
 let graphData = {nodes:[], edges:[], clusters:[]};
 
-// ── Onboarding: dismissible, remembered per-browser ──────────────────────
+// ── Onboarding modal: shown above everything on first visit, dismissible ──
 (function initOnboarding(){
   let dismissed = false;
   try { dismissed = localStorage.getItem("ring_onboard_dismissed") === "1"; } catch(e) {}
-  const el = document.getElementById("onboard");
-  if(dismissed) el.style.display = "none";
-  document.getElementById("onboard-close").addEventListener("click", () => {
-    el.style.display = "none";
+  const backdrop = document.getElementById("onboard-backdrop");
+  if(!dismissed) backdrop.style.display = "flex";
+
+  const close = () => {
+    backdrop.style.display = "none";
     try { localStorage.setItem("ring_onboard_dismissed", "1"); } catch(e) {}
-  });
+  };
+  document.getElementById("onboard-skip").addEventListener("click", close);
+  document.getElementById("onboard-start").addEventListener("click", close);
+  backdrop.addEventListener("click", (e) => { if(e.target === backdrop) close(); });
+  document.addEventListener("keydown", (e) => { if(e.key === "Escape" && backdrop.style.display !== "none") close(); });
 })();
 
 async function loadMetrics(){

@@ -10,3 +10,8 @@ data/*.json
 .pytest_cache/
 .DS_Store
 node_modules/
+
+# Real IEEE-CIS dataset (652MB) — downloaded on demand, see docs/REAL_DATA_ATTEMPT.md
+data/train_transaction.csv
+data/train_identity.csv
+data/real_model.joblib
