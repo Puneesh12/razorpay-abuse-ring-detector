@@ -435,16 +435,22 @@ function initSim(){
   };
 
   if(animId) cancelAnimationFrame(animId);
-  function tick(){
+    // Tuned to stop nodes piling up against the canvas walls: centering pull
+    // is now strong enough to dominate for isolated nodes, and repulsion is
+    // range-limited so far-apart nodes don't keep shoving each other outward.
+    const REPEL_RANGE2 = 130 * 130;
+    function tick(){
     simNodes.forEach(n => {
       if(n === dragging) return;
-      let fx = (W/2 - n.x) * 0.0015, fy = (H/2 - n.y) * 0.0015;
+      let fx = (W/2 - n.x) * 0.012, fy = (H/2 - n.y) * 0.012;
       simNodes.forEach(o => {
         if(o === n) return;
-        const dx = n.x - o.x, dy = n.y - o.y, d2 = Math.max(dx*dx + dy*dy, 25), f = 260 / d2;
+        const dx = n.x - o.x, dy = n.y - o.y, d2 = dx*dx + dy*dy;
+        if(d2 > REPEL_RANGE2) return;
+        const f = 90 / Math.max(d2, 25);
         fx += dx * f; fy += dy * f;
       });
-      n.vx = (n.vx + fx) * 0.82; n.vy = (n.vy + fy) * 0.82;
+      n.vx = (n.vx + fx) * 0.85; n.vy = (n.vy + fy) * 0.85;
     });
     links.forEach(l => {
       const a = simNodes[l.s], b = simNodes[l.t];
