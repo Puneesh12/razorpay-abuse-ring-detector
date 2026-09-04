@@ -88,7 +88,7 @@
   .panel-note{font-size:10.5px;color:var(--muted)}
 
   #graph-wrap{position:relative;background:#050505;border-radius:8px;overflow:hidden;border:1px solid var(--border)}
-  canvas{display:block;width:100%;touch-action:none;cursor:grab}
+  canvas{display:block;width:100%;height:380px;touch-action:none;cursor:grab}
   .legend{display:flex;flex-wrap:wrap;gap:14px;padding:10px 2px 2px;font-size:10px;color:var(--muted)}
   .legend span{display:inline-flex;align-items:center;gap:5px}
   .dot{width:7px;height:7px;border-radius:50%;display:inline-block}
@@ -124,6 +124,40 @@
   .good{color:var(--good)!important} .bad{color:var(--bad)!important}
 
   .empty{color:var(--muted);padding:24px 10px;text-align:center;font-size:11.5px}
+
+  /* ── Onboarding — dismissible, explains the tool before the tool is used ── */
+  .onboard{
+    background:linear-gradient(135deg,rgba(253,224,71,.08),rgba(253,224,71,.02));
+    border:1px solid rgba(253,224,71,.25);border-radius:12px;
+    padding:18px 20px;margin-bottom:14px;
+  }
+  .onboard-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .onboard-top h2{font-size:14px;font-weight:800;margin:0 0 4px;color:var(--white)}
+  .onboard-top p{font-size:12px;color:var(--text-2);margin:0;max-width:560px;line-height:1.6}
+  .onboard-close{
+    background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;
+    padding:5px 12px;font-size:11px;font-weight:600;flex-shrink:0;white-space:nowrap;
+    transition:border-color .15s,color .15s;
+  }
+  .onboard-close:hover{border-color:rgba(255,255,255,.3);color:var(--white)}
+  .onboard-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .onboard-step{display:flex;gap:10px;align-items:flex-start}
+  .onboard-step .num{
+    width:22px;height:22px;border-radius:50%;background:var(--yellow);color:var(--void);
+    font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .onboard-step .txt{font-size:11.5px;color:var(--text-2);line-height:1.5;padding-top:2px}
+  .onboard-step .txt b{color:var(--white)}
+  @media (max-width:760px){.onboard-steps{grid-template-columns:1fr}}
+
+  /* graph empty-state overlay */
+  .graph-empty{
+    position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:10px;text-align:center;padding:20px;color:var(--muted);font-size:12px;line-height:1.7;
+  }
+  .graph-empty b{color:var(--white)}
+  .graph-empty .arrow-up{font-size:20px;color:var(--yellow);animation:bounce 1.6s ease-in-out infinite}
+  @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
   .foot-note{color:var(--muted-2);font-size:10px;margin-top:10px;line-height:1.6}
   .foot-note code{background:#000;padding:1px 5px;border-radius:3px}
 
@@ -165,11 +199,33 @@
 </div>
 
 <div class="workspace">
+
+  <div class="onboard fade-in" id="onboard">
+    <div class="onboard-top">
+      <div>
+        <h2>New here? This is what the tool does.</h2>
+        <p>It looks for accounts that are secretly connected — same device, bank payout account, or address — groups them, and scores whether the group's behaviour looks coordinated or just coincidental. It never blocks anyone; it only ever queues a case for a human to review.</p>
+      </div>
+      <button class="onboard-close" id="onboard-close" type="button">Got it, hide this</button>
+    </div>
+    <div class="onboard-steps">
+      <div class="onboard-step"><span class="num">1</span><span class="txt"><b>Click "Run Detection Pass"</b> above — it runs the real pipeline on held-out data, nothing is faked.</span></div>
+      <div class="onboard-step"><span class="num">2</span><span class="txt"><b>Watch the graph fill in</b> — each dot is an account, lines connect accounts that share something. Red = worth a priority look, yellow = standard review, grey = nothing suspicious.</span></div>
+      <div class="onboard-step"><span class="num">3</span><span class="txt"><b>Click any red or yellow dot</b> (or a row in "Flagged clusters") to see exactly why it was flagged — real evidence, not just a score.</span></div>
+    </div>
+  </div>
+
   <div class="grid">
     <div>
       <div class="panel fade-in">
         <div class="panel-head"><h2 class="panel-title">Account graph</h2><span class="panel-note">Drag · click to inspect</span></div>
-        <div id="graph-wrap"><canvas id="graph-canvas" height="380"></canvas></div>
+        <div id="graph-wrap">
+          <canvas id="graph-canvas" height="380"></canvas>
+          <div class="graph-empty" id="graph-empty">
+            <div class="arrow-up">↑</div>
+            <div>Nothing loaded yet — click <b>"Run Detection Pass"</b> in the top bar.<br>Each account becomes a dot; a line means two accounts share a device, bank account, or address.</div>
+          </div>
+        </div>
         <div class="legend">
           <span><i class="dot" style="background:#f87171"></i>priority review</span>
           <span><i class="dot" style="background:#FDE047"></i>standard review</span>
@@ -178,13 +234,13 @@
       </div>
       <div class="panel fade-in" style="--stagger:.08s">
         <div class="panel-head"><h2 class="panel-title">Flagged clusters</h2><span class="panel-note" id="cluster-summary">held-out test split</span></div>
-        <div class="flagged-list" id="cluster-body"><div class="empty">Run a detection pass to populate.</div></div>
+        <div class="flagged-list" id="cluster-body"><div class="empty">This will list only the groups worth a human's attention — not every account, just the ones that look coordinated. Run a detection pass to see them.</div></div>
       </div>
     </div>
     <div>
       <div class="panel fade-in" style="--stagger:.05s">
         <div class="panel-head"><h2 class="panel-title">Cluster detail</h2><span class="panel-note" id="detail-label"></span></div>
-        <div id="detail"><div class="empty">Click a node or a flagged cluster to inspect its case file and evidence.</div></div>
+        <div id="detail"><div class="empty">Click a dot in the graph, or a row in "Flagged clusters," to see the actual evidence — which accounts, what they share, and why the score is what it is.</div></div>
       </div>
       <div class="panel fade-in" style="--stagger:.12s">
         <div class="panel-head"><h2 class="panel-title">Evaluation</h2><span class="panel-note">held-out test</span></div>
@@ -199,6 +255,18 @@ const API = "";
 const fmt = (n) => n == null ? "—" : "₹" + Number(n).toLocaleString("en-IN", {maximumFractionDigits:0});
 const pct = (n) => n == null ? "—" : (n*100).toFixed(1) + "%";
 let graphData = {nodes:[], edges:[], clusters:[]};
+
+// ── Onboarding: dismissible, remembered per-browser ──────────────────────
+(function initOnboarding(){
+  let dismissed = false;
+  try { dismissed = localStorage.getItem("ring_onboard_dismissed") === "1"; } catch(e) {}
+  const el = document.getElementById("onboard");
+  if(dismissed) el.style.display = "none";
+  document.getElementById("onboard-close").addEventListener("click", () => {
+    el.style.display = "none";
+    try { localStorage.setItem("ring_onboard_dismissed", "1"); } catch(e) {}
+  });
+})();
 
 async function loadMetrics(){
   try{
@@ -235,6 +303,7 @@ async function runDetection(){
   dot.classList.add("live"); document.getElementById("status-tag").textContent = "scanning…";
   const r = await fetch(API + "/api/graph?split=test&limit_clusters=25");
   graphData = await r.json();
+  document.getElementById("graph-empty").style.display = "none";
   dot.classList.remove("live"); document.getElementById("status-tag").textContent = "complete";
   btn.disabled = false; btn.classList.remove("loading"); label.textContent = "Run Detection Pass";
 
