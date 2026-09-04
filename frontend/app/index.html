@@ -81,8 +81,13 @@
   /* ── Workspace: graph + inspector, immediately, no hero scroll ──────── */
   .workspace{max-width:1440px;margin:0 auto;padding:16px 24px 24px}
   .grid{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;align-items:start}
-  .panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;min-width:0}
-  .panel + .panel{margin-top:14px}
+  /* ── One bordered panel per column, not one box per section ────────────
+     Sub-sections inside share the frame and are separated by a hairline
+     divider, not a repeated card border -- the box-grid pattern reads as
+     templated regardless of color, so each column is a single panel. ──── */
+  .col-panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;min-width:0;overflow:hidden}
+  .subsection{padding:16px}
+  .subsection + .subsection{border-top:1px solid var(--border)}
   .panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
   .panel-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-2);margin:0}
   .panel-note{font-size:10.5px;color:var(--muted)}
@@ -259,8 +264,8 @@
 
 <div class="workspace">
   <div class="grid">
-    <div>
-      <div class="panel fade-in">
+    <div class="col-panel fade-in">
+      <div class="subsection">
         <div class="panel-head"><h2 class="panel-title">Account graph</h2><span class="panel-note">Drag · click to inspect</span></div>
         <div id="graph-wrap">
           <canvas id="graph-canvas" height="380"></canvas>
@@ -275,17 +280,17 @@
           <span><i class="dot" style="background:#5c5c5c"></i>no action</span>
         </div>
       </div>
-      <div class="panel fade-in" style="--stagger:.08s">
+      <div class="subsection">
         <div class="panel-head"><h2 class="panel-title">Flagged clusters</h2><span class="panel-note" id="cluster-summary">held-out test split</span></div>
         <div class="flagged-list" id="cluster-body"><div class="empty">This will list only the groups worth a human's attention — not every account, just the ones that look coordinated. Run a detection pass to see them.</div></div>
       </div>
     </div>
-    <div>
-      <div class="panel fade-in" style="--stagger:.05s">
+    <div class="col-panel fade-in" style="--stagger:.06s">
+      <div class="subsection">
         <div class="panel-head"><h2 class="panel-title">Cluster detail</h2><span class="panel-note" id="detail-label"></span></div>
         <div id="detail"><div class="empty">Click a dot in the graph, or a row in "Flagged clusters," to see the actual evidence — which accounts, what they share, and why the score is what it is.</div></div>
       </div>
-      <div class="panel fade-in" style="--stagger:.12s">
+      <div class="subsection">
         <div class="panel-head"><h2 class="panel-title">Evaluation</h2><span class="panel-note">held-out test</span></div>
         <div id="eval-body" class="empty">Loading /api/metrics…</div>
       </div>
