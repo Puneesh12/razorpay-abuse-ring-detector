@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Abuse Ring Detector</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" type="image/png" href="/assets/razorpay-icon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ── Tokens ──────────────────────────────────────────────────────────── */
+  :root{
+    --yellow:#FDE047;
+    --void:#0A0A0A;
+    --surface:#131313;
+    --surface-2:#1a1a1a;
+    --border:rgba(255,255,255,.09);
+    --white:#FFFFFF;
+    --text-2:#d4d4d4;
+    --muted:#8a8a8a;
+    --muted-2:#5c5c5c;
+    --good:#4ade80;
+    --bad:#f87171;
+    --font:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+    --mono:'Roboto Mono',ui-monospace,Consolas,monospace;
+    --ease:cubic-bezier(.22,1,.36,1);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--void);color:var(--white);font-family:var(--font);-webkit-font-smoothing:antialiased;overflow-x:hidden;font-size:13px;line-height:1.5}
+  img,svg{display:block}
+  button{font-family:inherit;cursor:pointer}
+
+  .fade-in{opacity:0;animation:fadeIn .5s var(--ease) forwards;animation-delay:var(--stagger,0s)}
+  @keyframes fadeIn{to{opacity:1}}
+  @media (prefers-reduced-motion:reduce){.fade-in{animation:none!important;opacity:1!important}}
+
+  /* ── Dense utility bar — this is a tool, not a landing page ─────────── */
+  .toolbar{
+    position:relative;overflow:hidden;
+    border-bottom:1px solid var(--border);
+  }
+  .toolbar-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:.5}
+  .toolbar-scrim{position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,rgba(10,10,10,.94) 0%,rgba(10,10,10,.75) 55%,rgba(10,10,10,.92) 100%)}
+  .toolbar-inner{
+    position:relative;z-index:2;
+    display:flex;align-items:center;gap:28px;flex-wrap:wrap;
+    padding:14px 24px;max-width:1440px;margin:0 auto;
+  }
+  .tb-brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13.5px;flex-shrink:0}
+  .tb-brand img{border-radius:5px}
+  .tb-sep{width:1px;height:22px;background:var(--border);flex-shrink:0}
+  .tb-stats{display:flex;align-items:center;gap:22px;flex-wrap:wrap;flex:1;min-width:0}
+  .tb-stat{display:flex;flex-direction:column;gap:1px}
+  .tb-stat .n{font-family:var(--mono);font-size:15px;font-weight:700;line-height:1}
+  .tb-stat .l{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+  .tb-run{
+    display:inline-flex;align-items:center;gap:8px;flex-shrink:0;
+    background:var(--yellow);color:var(--void);border:none;border-radius:8px;
+    padding:0 18px;height:36px;font-size:12.5px;font-weight:700;letter-spacing:.01em;
+    transition:transform .15s var(--ease),opacity .15s;
+  }
+  .tb-run:hover{transform:translateY(-1px)}
+  .tb-run:active{transform:translateY(0);opacity:.85}
+  .tb-run:disabled{opacity:.4;cursor:not-allowed;transform:none}
+  .spinner{width:12px;height:12px;border-radius:50%;border:2px solid rgba(10,10,10,.3);border-top-color:var(--void);animation:spin .7s linear infinite;display:none}
+  .tb-run.loading .spinner{display:inline-block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .tb-status{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);flex-shrink:0}
+  .tb-dot{width:6px;height:6px;border-radius:50%;background:var(--muted-2)}
+  .tb-dot.live{background:var(--yellow);animation:pulse 1.1s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  .track-strip{
+    background:var(--surface);border-bottom:1px solid var(--border);
+    padding:6px 24px;font-size:10.5px;color:var(--muted);
+    display:flex;gap:16px;flex-wrap:wrap;max-width:1440px;margin:0 auto;
+  }
+  .track-strip b{color:var(--yellow);font-weight:700}
+
+  /* ── Workspace: graph + inspector, immediately, no hero scroll ──────── */
+  .workspace{max-width:1440px;margin:0 auto;padding:16px 24px 24px}
+  .grid{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;align-items:start}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;min-width:0}
+  .panel + .panel{margin-top:14px}
+  .panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+  .panel-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-2);margin:0}
+  .panel-note{font-size:10.5px;color:var(--muted)}
+
+  #graph-wrap{position:relative;background:#050505;border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+  canvas{display:block;width:100%;touch-action:none;cursor:grab}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;padding:10px 2px 2px;font-size:10px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+
+  /* compact flagged-cluster rows (not cards — this list is dense, not decorative) */
+  .flagged-list{display:flex;flex-direction:column;gap:6px}
+  .frow{
+    display:flex;align-items:center;gap:10px;
+    background:var(--surface-2);border:1px solid var(--border);border-radius:7px;
+    padding:9px 12px;cursor:pointer;text-align:left;width:100%;color:var(--white);
+    transition:border-color .15s;
+  }
+  .frow:hover{border-color:rgba(255,255,255,.25)}
+  .frow-id{font-family:var(--mono);font-size:11px;font-weight:600;flex-shrink:0;width:88px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .frow-bar{flex:1;height:4px;border-radius:99px;background:#000;overflow:hidden;min-width:40px}
+  .frow-fill{height:100%;border-radius:99px}
+  .frow-fill.priority_review{background:var(--bad)}
+  .frow-fill.queue_for_review{background:var(--yellow)}
+  .frow-score{font-family:var(--mono);font-size:11px;font-weight:700;width:36px;text-align:right;flex-shrink:0}
+  .frow-tag{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:2px 8px;border-radius:99px;flex-shrink:0}
+  .frow-tag.priority_review{background:rgba(248,113,113,.15);color:var(--bad)}
+  .frow-tag.queue_for_review{background:rgba(253,224,71,.15);color:var(--yellow)}
+
+  #detail{font-family:var(--mono);font-size:11px;max-height:340px;overflow:auto;line-height:1.65}
+  .case-box{background:rgba(253,224,71,.05);border:1px solid rgba(253,224,71,.18);border-radius:8px;padding:11px;margin-bottom:11px;font-family:var(--font)}
+  .case-box .tag{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--yellow);font-weight:800;margin-bottom:5px}
+  .ev-block{margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)}
+
+  table{width:100%;border-collapse:collapse;font-size:11.5px}
+  th{text-align:left;color:var(--muted);font-weight:700;padding:5px 8px;border-bottom:1px solid var(--border);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em}
+  td{padding:5px 8px;border-bottom:1px solid var(--border);font-family:var(--mono);color:var(--text-2)}
+  td:last-child{color:var(--white);font-weight:600}
+  .good{color:var(--good)!important} .bad{color:var(--bad)!important}
+
+  .empty{color:var(--muted);padding:24px 10px;text-align:center;font-size:11.5px}
+  .foot-note{color:var(--muted-2);font-size:10px;margin-top:10px;line-height:1.6}
+  .foot-note code{background:#000;padding:1px 5px;border-radius:3px}
+
+  @media (max-width:960px){.grid{grid-template-columns:1fr}}
+  @media (max-width:760px){
+    .toolbar-inner{padding:12px 16px;flex-direction:column;align-items:stretch;gap:12px}
+    .tb-brand{order:1}
+    .tb-sep{display:none}
+    .tb-run{order:2;width:100%;white-space:nowrap}
+    .tb-stats{order:3;width:100%;justify-content:space-between;gap:12px}
+    .tb-status{order:4}
+    .workspace{padding:12px 16px 20px}
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <video class="toolbar-video" autoplay muted loop playsinline>
+    <source src="/assets/loopbg.mp4" type="video/mp4">
+  </video>
+  <div class="toolbar-scrim"></div>
+  <div class="toolbar-inner">
+    <a href="/" class="tb-brand" style="text-decoration:none;color:inherit"><img src="/assets/razorpay-icon.png" alt="Razorpay" width="18" height="18" />Ring</a>
+    <div class="tb-sep"></div>
+    <div class="tb-stats" id="tb-stats">
+      <div class="tb-stat"><span class="n" id="k-accounts">—</span><span class="l">accounts</span></div>
+      <div class="tb-stat"><span class="n" id="k-clusters">—</span><span class="l">clusters</span></div>
+      <div class="tb-stat"><span class="n" id="k-pr">—</span><span class="l">precision/recall</span></div>
+      <div class="tb-stat"><span class="n good" id="k-fp">—</span><span class="l">fp accounts vs. baseline</span></div>
+    </div>
+    <div class="tb-status"><span class="tb-dot" id="status-dot"></span><span id="status-tag">not started</span></div>
+    <button class="tb-run" id="run-btn"><span class="spinner"></span><span id="run-btn-label">Run Detection Pass</span></button>
+  </div>
+</div>
+<div class="track-strip">
+  <span>Razorpay AI Buildathon · <b>Track 2 — AI Risk Manager</b></span>
+  <span>Strictly defense-only — every action is <b>no_action</b>, <b>queue_for_review</b>, or <b>priority_review</b></span>
+</div>
+
+<div class="workspace">
+  <div class="grid">
+    <div>
+      <div class="panel fade-in">
+        <div class="panel-head"><h2 class="panel-title">Account graph</h2><span class="panel-note">Drag · click to inspect</span></div>
+        <div id="graph-wrap"><canvas id="graph-canvas" height="380"></canvas></div>
+        <div class="legend">
+          <span><i class="dot" style="background:#f87171"></i>priority review</span>
+          <span><i class="dot" style="background:#FDE047"></i>standard review</span>
+          <span><i class="dot" style="background:#5c5c5c"></i>no action</span>
+        </div>
+      </div>
+      <div class="panel fade-in" style="--stagger:.08s">
+        <div class="panel-head"><h2 class="panel-title">Flagged clusters</h2><span class="panel-note" id="cluster-summary">held-out test split</span></div>
+        <div class="flagged-list" id="cluster-body"><div class="empty">Run a detection pass to populate.</div></div>
+      </div>
+    </div>
+    <div>
+      <div class="panel fade-in" style="--stagger:.05s">
+        <div class="panel-head"><h2 class="panel-title">Cluster detail</h2><span class="panel-note" id="detail-label"></span></div>
+        <div id="detail"><div class="empty">Click a node or a flagged cluster to inspect its case file and evidence.</div></div>
+      </div>
+      <div class="panel fade-in" style="--stagger:.12s">
+        <div class="panel-head"><h2 class="panel-title">Evaluation</h2><span class="panel-note">held-out test</span></div>
+        <div id="eval-body" class="empty">Loading /api/metrics…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = "";
+const fmt = (n) => n == null ? "—" : "₹" + Number(n).toLocaleString("en-IN", {maximumFractionDigits:0});
+const pct = (n) => n == null ? "—" : (n*100).toFixed(1) + "%";
+let graphData = {nodes:[], edges:[], clusters:[]};
+
+async function loadMetrics(){
+  try{
+    const r = await fetch(API + "/api/metrics");
+    if(!r.ok) throw new Error("no metrics");
+    const m = await r.json();
+    document.getElementById("k-accounts").textContent = m.policy_run_test_split.n_accounts_wrongly_flagged + m.policy_run_test_split.n_accounts_correctly_flagged;
+    document.getElementById("k-clusters").textContent = m.dataset.n_clusters_found;
+    document.getElementById("k-pr").textContent = (m.detector_metrics.held_out_test.cluster_precision*100).toFixed(0) + "% / " + (m.detector_metrics.held_out_test.cluster_recall*100).toFixed(0) + "%";
+    document.getElementById("k-fp").textContent = m.policy_run_test_split.n_accounts_wrongly_flagged + " vs " + m.baseline_graph_only_test_split.n_accounts_wrongly_flagged;
+
+    const p = m.policy_run_test_split, b = m.baseline_graph_only_test_split, d = m.detector_metrics.held_out_test;
+    document.getElementById("eval-body").innerHTML = `
+      <table>
+        <thead><tr><th></th><th>Baseline</th><th>Ours</th></tr></thead>
+        <tbody>
+          <tr><td>Clusters flagged</td><td>${b.n_clusters_flagged}</td><td>${p.n_flagged}</td></tr>
+          <tr><td>Wrongly flagged accts</td><td class="bad">${b.n_accounts_wrongly_flagged}</td><td class="good">${p.n_accounts_wrongly_flagged}</td></tr>
+          <tr><td>FP cost</td><td class="bad">${fmt(b.false_positive_cost_inr)}</td><td class="good">${fmt(p.false_positive_cost_inr)}</td></tr>
+          <tr><td>At-risk ₹ caught</td><td>${fmt(b.estimated_loss_caught_inr)}</td><td>${fmt(p.estimated_loss_caught_inr)}</td></tr>
+          <tr><td>Precision / recall</td><td>${pct(b.cluster_precision)}/${pct(b.cluster_recall)}</td><td>${pct(d.cluster_precision)}/${pct(d.cluster_recall)}</td></tr>
+        </tbody>
+      </table>
+      <p class="foot-note">Honest caveat: only ${d.true_positive_clusters + d.false_negative_clusters} ground-truth ring cluster(s) in this test split — directionally strong, small n. See <code>docs/EVALUATION.md</code>.</p>
+    `;
+  }catch(e){
+    document.getElementById("eval-body").innerHTML = '<div class="empty">No evaluation run yet. Run <code>python -m app.core.evaluation</code>.</div>';
+  }
+}
+
+async function runDetection(){
+  const btn = document.getElementById("run-btn"), label = document.getElementById("run-btn-label"), dot = document.getElementById("status-dot");
+  btn.disabled = true; btn.classList.add("loading"); label.textContent = "Scanning…";
+  dot.classList.add("live"); document.getElementById("status-tag").textContent = "scanning…";
+  const r = await fetch(API + "/api/graph?split=test&limit_clusters=25");
+  graphData = await r.json();
+  dot.classList.remove("live"); document.getElementById("status-tag").textContent = "complete";
+  btn.disabled = false; btn.classList.remove("loading"); label.textContent = "Run Detection Pass";
+
+  const body = document.getElementById("cluster-body");
+  body.innerHTML = "";
+  const all = graphData.clusters.slice().sort((a,b) => b.abuse_score - a.abuse_score);
+  const flagged = all.filter(c => c.action !== "no_action");
+  const quiet = all.length - flagged.length;
+  document.getElementById("cluster-summary").textContent = flagged.length + " flagged · " + quiet + " clean";
+
+  if(flagged.length === 0) body.innerHTML = '<div class="empty">No clusters crossed the review threshold.</div>';
+  flagged.forEach(c => {
+    const score = Math.round(c.abuse_score*100);
+    const row = document.createElement("button");
+    row.type = "button"; row.className = "frow";
+    row.onclick = () => showClusterDetail(c.cluster_id);
+    row.innerHTML = `
+      <span class="frow-id">${c.cluster_id}</span>
+      <span class="frow-bar"><span class="frow-fill ${c.action}" style="width:${score}%"></span></span>
+      <span class="frow-score">${score}%</span>
+      <span class="frow-tag ${c.action}">${c.action.replace(/_/g,' ')}</span>
+    `;
+    body.appendChild(row);
+  });
+
+  initSim();
+  await loadMetrics();
+}
+
+async function showClusterDetail(clusterId){
+  document.getElementById("detail-label").textContent = clusterId;
+  const el = document.getElementById("detail");
+  el.innerHTML = '<div class="empty">Loading…</div>';
+  const r = await fetch(API + "/api/cluster/" + clusterId);
+  const d = await r.json();
+  el.innerHTML = `
+    <div class="case-box"><div class="tag">Case file · ${d.case_file_mode}</div>${d.case_file}</div>
+    <div><b>action:</b> ${d.action}</div>
+    <div style="margin-top:4px"><b>reason:</b> ${d.reason}</div>
+    <div style="margin-top:6px"><b>shared:</b> ${d.shared_attributes.join(", ")}</div>
+    <div class="ev-block"><b>features:</b><br>${Object.entries(d.features).map(([k,v])=>`${k}: ${v}`).join("<br>")}</div>
+    <div class="ev-block"><b>members (${d.members.length}):</b><br>${d.members.map(m=>`${m.account_id} · refund ${(m.refund_rate*100).toFixed(0)}% · kyc ${m.kyc_verified}`).join("<br>")}</div>
+  `;
+}
+
+let animId = null;
+function initSim(){
+  const canvas = document.getElementById("graph-canvas");
+  const wrap = document.getElementById("graph-wrap");
+  const W = wrap.clientWidth, H = 380;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  const colorFor = (action) => action === "priority_review" ? "#f87171" : action === "queue_for_review" ? "#FDE047" : "#5c5c5c";
+
+  let simNodes = graphData.nodes.map(n => ({...n, x: W/2 + (Math.random()-0.5)*W*0.7, y: H/2 + (Math.random()-0.5)*H*0.7, vx:0, vy:0}));
+  const nodeIndex = Object.fromEntries(simNodes.map((n,i)=>[n.id,i]));
+  const links = graphData.edges.map(e => ({s: nodeIndex[e.source], t: nodeIndex[e.target], weight: e.weight})).filter(l => l.s !== undefined && l.t !== undefined);
+
+  let dragging = null;
+  canvas.onmousedown = (e) => {
+    const r = canvas.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+    let closest = null, dist = 18;
+    simNodes.forEach(n => { const dd = Math.hypot(n.x-mx, n.y-my); if(dd < dist){dist=dd; closest=n;} });
+    if(closest){ dragging = closest; canvas.style.cursor = "grabbing"; }
+  };
+  canvas.onmousemove = (e) => {
+    if(!dragging) return;
+    const r = canvas.getBoundingClientRect();
+    dragging.x = e.clientX - r.left; dragging.y = e.clientY - r.top; dragging.vx = 0; dragging.vy = 0;
+  };
+  window.onmouseup = () => { dragging = null; canvas.style.cursor = "grab"; };
+  canvas.onclick = (e) => {
+    const r = canvas.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+    const hit = simNodes.find(n => Math.hypot(n.x-mx, n.y-my) < 10);
+    if(hit) showClusterDetail(hit.cluster_id);
+  };
+
+  if(animId) cancelAnimationFrame(animId);
+  function tick(){
+    simNodes.forEach(n => {
+      if(n === dragging) return;
+      let fx = (W/2 - n.x) * 0.0015, fy = (H/2 - n.y) * 0.0015;
+      simNodes.forEach(o => {
+        if(o === n) return;
+        const dx = n.x - o.x, dy = n.y - o.y, d2 = Math.max(dx*dx + dy*dy, 25), f = 260 / d2;
+        fx += dx * f; fy += dy * f;
+      });
+      n.vx = (n.vx + fx) * 0.82; n.vy = (n.vy + fy) * 0.82;
+    });
+    links.forEach(l => {
+      const a = simNodes[l.s], b = simNodes[l.t];
+      const dx = b.x - a.x, dy = b.y - a.y, dist = Math.hypot(dx, dy) || 1;
+      const f = (dist - 42) * 0.02 * Math.min(l.weight/3, 1.5);
+      const fx = (dx/dist) * f, fy = (dy/dist) * f;
+      if(a !== dragging){ a.vx += fx; a.vy += fy; }
+      if(b !== dragging){ b.vx -= fx; b.vy -= fy; }
+    });
+    simNodes.forEach(n => {
+      if(n === dragging) return;
+      n.x += n.vx; n.y += n.vy;
+      n.x = Math.max(10, Math.min(W-10, n.x)); n.y = Math.max(10, Math.min(H-10, n.y));
+    });
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle = "rgba(255,255,255,0.12)";
+    links.forEach(l => {
+      const a = simNodes[l.s], b = simNodes[l.t];
+      ctx.lineWidth = Math.min(l.weight/2, 3);
+      ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+    });
+    simNodes.forEach(n => {
+      ctx.beginPath(); ctx.arc(n.x, n.y, 6, 0, Math.PI*2); ctx.fillStyle = colorFor(n.action); ctx.fill();
+      if(n.is_ring){ ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.arc(n.x, n.y, 9, 0, Math.PI*2); ctx.stroke(); }
+    });
+    animId = requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+document.getElementById("run-btn").addEventListener("click", runDetection);
+loadMetrics();
+</script>
+</body>
+</html>
