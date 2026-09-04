@@ -84,8 +84,50 @@ def generate_accounts(n_legit: int = 3600, n_rings: int = 28, seed: int = RNG_SE
             is_ring_member=False,
         ))
 
-    # ---- collusion rings ----
+    # ---- legitimate SHARED-CONTEXT groups (families, offices, apartment buildings) ----
+    # Deliberately sized 3-6, overlapping with ring sizes (3-12): without this, every
+    # legit coincidence is a lone pairwise fluke (~size 2) and every ring is size 3+,
+    # which lets a classifier "cheat" by learning cluster_size alone instead of actual
+    # behaviour. These groups force the model to learn the real signal.
+    n_legit_groups = max(18, n_rings)
     idx = n_legit
+    for lg in range(n_legit_groups):
+        size = int(rng.integers(3, 7))
+        share_addr = rng.random() < 0.6
+        # a family/roommates on the same home wifi plausibly shares BOTH address and
+        # IP -- don't make these mutually exclusive, or "how many attribute types are
+        # shared" becomes its own giveaway feature the same way cluster_size was.
+        share_ip = rng.random() < 0.45
+        shared_addr = _hash_id("legitaddr", lg, seed)
+        shared_ip = _hash_id("legitip", lg, seed)[:8]
+        # spread over months, NOT a registration burst — the actual tell
+        base_signup = base_time - timedelta(days=int(rng.integers(30, 900)))
+        for k in range(size):
+            signup = base_signup + timedelta(days=float(rng.uniform(-120, 120)))
+            age = max(3.0, (base_time - signup).total_seconds() / 86400)
+            orders = int(max(0, rng.poisson(6)))
+            refunds = int(min(orders, rng.binomial(orders, 0.06))) if orders else 0
+            rows.append(Account(
+                account_id=_hash_id("lgacct", idx, seed),
+                device_fingerprint=_hash_id("dev", idx, seed),
+                ip_subnet=shared_ip if share_ip else _hash_id("ip", idx, seed)[:8],
+                payout_account_hash=_hash_id("payout", idx, seed),
+                shipping_address_hash=shared_addr if share_addr else _hash_id("addr", idx, seed),
+                signup_date=signup.isoformat(),
+                account_age_days=round(age, 1),
+                order_count=orders,
+                refund_count=refunds,
+                refund_rate=round(refunds / orders, 3) if orders else 0.0,
+                avg_order_value=round(float(np.clip(rng.lognormal(6.8, 0.7), 99, 40000)), 2),
+                promo_usage_count=int(rng.poisson(1.2)),
+                distinct_devices_used=int(max(1, rng.poisson(1.4))),
+                kyc_verified=bool(rng.random() < 0.86),
+                ring_id=None,
+                is_ring_member=False,
+            ))
+            idx += 1
+
+    # ---- collusion rings ----
     for r in range(n_rings):
         ring_id = f"ring_{r}"
         size = int(rng.integers(3, 13))
