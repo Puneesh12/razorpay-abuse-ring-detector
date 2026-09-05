@@ -170,16 +170,23 @@ def _dispatch(name: str, tool_input: dict, *, accounts: pd.DataFrame, cluster_df
     return {"error": f"unknown tool '{name}'"}
 
 
-def investigate(question: str, cluster_id: str, *, accounts: pd.DataFrame, cluster_df: pd.DataFrame, clf) -> dict:
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        return {
-            "available": False,
-            "reason": "No ANTHROPIC_API_KEY configured. The core detection pipeline does not "
-                      "need one — this investigation assistant is an optional layer on top of it.",
-            "tools_available": [t["name"] for t in TOOL_SCHEMAS],
-        }
+GROQ_MODEL = "llama-3.3-70b-versatile"
 
+
+def _openai_style_tools() -> list[dict]:
+    """Groq's API is OpenAI-compatible: function-calling tools use a
+    different envelope than Anthropic's, even though the same JSON schema
+    describes the parameters either way."""
+    return [
+        {"type": "function", "function": {
+            "name": t["name"], "description": t["description"], "parameters": t["input_schema"],
+        }}
+        for t in TOOL_SCHEMAS
+    ]
+
+
+def _investigate_anthropic(api_key: str, question: str, cluster_id: str, *,
+                            accounts: pd.DataFrame, cluster_df: pd.DataFrame, clf) -> dict:
     import anthropic
     client = anthropic.Anthropic(api_key=api_key)
 
@@ -196,7 +203,7 @@ def investigate(question: str, cluster_id: str, *, accounts: pd.DataFrame, clust
         tool_calls = [b for b in response.content if b.type == "tool_use"]
         if not tool_calls:
             final_text = "".join(b.text for b in response.content if b.type == "text")
-            return {"available": True, "answer": final_text, "tool_trace": trace}
+            return {"available": True, "answer": final_text, "tool_trace": trace, "provider": "anthropic"}
 
         tool_results = []
         for call in tool_calls:
@@ -207,4 +214,57 @@ def investigate(question: str, cluster_id: str, *, accounts: pd.DataFrame, clust
             })
         messages.append({"role": "user", "content": tool_results})
 
-    return {"available": True, "answer": "Reached the investigation turn limit without a final answer.", "tool_trace": trace}
+    return {"available": True, "answer": "Reached the investigation turn limit without a final answer.",
+            "tool_trace": trace, "provider": "anthropic"}
+
+
+def _investigate_groq(api_key: str, question: str, cluster_id: str, *,
+                       accounts: pd.DataFrame, cluster_df: pd.DataFrame, clf) -> dict:
+    import groq
+    client = groq.Groq(api_key=api_key)
+    tools = _openai_style_tools()
+
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": f"Cluster under review: {cluster_id}\n\nReviewer's question: {question}"},
+    ]
+    trace = []
+
+    for _ in range(MAX_TOOL_TURNS):
+        response = client.chat.completions.create(
+            model=GROQ_MODEL, max_tokens=1024, tools=tools, messages=messages,
+        )
+        msg = response.choices[0].message
+        messages.append(msg.model_dump(exclude_none=True))
+
+        if not msg.tool_calls:
+            return {"available": True, "answer": msg.content or "", "tool_trace": trace, "provider": "groq"}
+
+        for call in msg.tool_calls:
+            tool_input = json.loads(call.function.arguments)
+            result = _dispatch(call.function.name, tool_input, accounts=accounts, cluster_df=cluster_df, clf=clf)
+            trace.append({"tool": call.function.name, "input": tool_input, "result": result})
+            messages.append({"role": "tool", "tool_call_id": call.id, "content": json.dumps(result)})
+
+    return {"available": True, "answer": "Reached the investigation turn limit without a final answer.",
+            "tool_trace": trace, "provider": "groq"}
+
+
+def investigate(question: str, cluster_id: str, *, accounts: pd.DataFrame, cluster_df: pd.DataFrame, clf) -> dict:
+    # Anthropic first if both happen to be configured, purely because that
+    # was the original design target; Groq is equally supported, not a
+    # fallback in capability terms -- just second in this if-chain.
+    anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
+    groq_key = os.environ.get("GROQ_API_KEY")
+
+    if anthropic_key:
+        return _investigate_anthropic(anthropic_key, question, cluster_id, accounts=accounts, cluster_df=cluster_df, clf=clf)
+    if groq_key:
+        return _investigate_groq(groq_key, question, cluster_id, accounts=accounts, cluster_df=cluster_df, clf=clf)
+
+    return {
+        "available": False,
+        "reason": "No ANTHROPIC_API_KEY or GROQ_API_KEY configured. The core detection pipeline does "
+                  "not need one — this investigation assistant is an optional layer on top of it.",
+        "tools_available": [t["name"] for t in TOOL_SCHEMAS],
+    }

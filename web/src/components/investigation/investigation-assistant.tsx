@@ -107,7 +107,10 @@ export function InvestigationAssistant({ clusterId }: { clusterId: string }) {
             )}
             <div className="flex gap-2.5">
               <Sparkles className="size-4 shrink-0 text-brand mt-0.5" />
-              <p className="text-[13.5px] leading-relaxed text-foreground/90">{result.answer}</p>
+              <div>
+                <p className="text-[13.5px] leading-relaxed text-foreground/90">{result.answer}</p>
+                <p className="text-[10.5px] text-muted-foreground mt-1.5">via {result.provider}</p>
+              </div>
             </div>
           </div>
         )}

@@ -14,7 +14,13 @@ from pathlib import Path
 
 import joblib
 import pandas as pd
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
+
+# Loads backend/.env (or repo-root .env) if present. Never required -- the
+# core detection pipeline works with zero keys. Only the optional
+# investigation assistant (investigate.py) reads GROQ_API_KEY / ANTHROPIC_API_KEY.
+load_dotenv()
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel

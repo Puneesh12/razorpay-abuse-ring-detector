@@ -1,3 +1,5 @@
+import json
+
 import pandas as pd
 
 from app.core import dataset, detector, investigate
@@ -64,6 +66,7 @@ def test_score_breakdown_ranks_by_importance_times_deviation():
 
 def test_investigate_reports_unavailable_without_api_key(monkeypatch):
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("GROQ_API_KEY", raising=False)
     accounts, cluster_df, clf = _pipeline()
     result = investigate.investigate("does this connect to anything else?", cluster_df.iloc[0]["cluster_id"],
                                       accounts=accounts, cluster_df=cluster_df, clf=clf)
@@ -76,3 +79,74 @@ def test_tool_schemas_have_no_action_capable_tools():
     banned = ["ban", "freeze", "suspend", "block", "flag", "queue", "approve", "reject"]
     for tool in investigate.TOOL_SCHEMAS:
         assert not any(w in tool["name"].lower() for w in banned), f"{tool['name']} looks action-capable"
+
+
+def test_openai_style_tools_match_anthropic_schemas_one_to_one():
+    converted = investigate._openai_style_tools()
+    assert len(converted) == len(investigate.TOOL_SCHEMAS)
+    for original, conv in zip(investigate.TOOL_SCHEMAS, converted):
+        assert conv["type"] == "function"
+        assert conv["function"]["name"] == original["name"]
+        assert conv["function"]["parameters"] == original["input_schema"]
+
+
+def test_groq_path_dispatches_tool_calls_and_returns_final_answer(monkeypatch):
+    """Mocks the groq client -- no real network call -- to verify the
+    OpenAI-style tool_calls/tool-role loop is wired correctly end to end."""
+    accounts, cluster_df, clf = _pipeline()
+    real_cluster_id = cluster_df.iloc[0]["cluster_id"]
+
+    class FakeFunction:
+        def __init__(self, name, arguments):
+            self.name = name
+            self.arguments = arguments
+
+    class FakeToolCall:
+        def __init__(self, id_, name, arguments):
+            self.id = id_
+            self.function = FakeFunction(name, arguments)
+
+    class FakeMessage:
+        def __init__(self, content=None, tool_calls=None):
+            self.content = content
+            self.tool_calls = tool_calls
+
+        def model_dump(self, exclude_none=True):
+            return {"role": "assistant", "content": self.content}
+
+    class FakeChoice:
+        def __init__(self, message):
+            self.message = message
+
+    class FakeResponse:
+        def __init__(self, message):
+            self.choices = [FakeChoice(message)]
+
+    call_count = {"n": 0}
+
+    class FakeCompletions:
+        def create(self, **kwargs):
+            call_count["n"] += 1
+            if call_count["n"] == 1:
+                tool_call = FakeToolCall("call_1", "get_score_breakdown", json.dumps({"cluster_id": real_cluster_id}))
+                return FakeResponse(FakeMessage(tool_calls=[tool_call]))
+            return FakeResponse(FakeMessage(content="Based on the breakdown, device reuse drove the score most."))
+
+    class FakeChat:
+        def __init__(self):
+            self.completions = FakeCompletions()
+
+    class FakeGroqClient:
+        def __init__(self, api_key):
+            self.chat = FakeChat()
+
+    fake_groq_module = type("fake_groq", (), {"Groq": FakeGroqClient})
+    monkeypatch.setitem(__import__("sys").modules, "groq", fake_groq_module)
+
+    result = investigate._investigate_groq("fake-key", "what drove this score?", real_cluster_id,
+                                            accounts=accounts, cluster_df=cluster_df, clf=clf)
+    assert result["available"] is True
+    assert result["provider"] == "groq"
+    assert len(result["tool_trace"]) == 1
+    assert result["tool_trace"][0]["tool"] == "get_score_breakdown"
+    assert "device reuse" in result["answer"]

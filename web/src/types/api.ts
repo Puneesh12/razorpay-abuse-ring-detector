@@ -166,4 +166,4 @@ export interface ToolTraceEntry {
 
 export type AskResponse =
   | { available: false; reason: string; tools_available: string[] }
-  | { available: true; answer: string; tool_trace: ToolTraceEntry[] };
+  | { available: true; answer: string; tool_trace: ToolTraceEntry[]; provider: "anthropic" | "groq" };
