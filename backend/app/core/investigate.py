@@ -170,7 +170,7 @@ def _dispatch(name: str, tool_input: dict, *, accounts: pd.DataFrame, cluster_df
     return {"error": f"unknown tool '{name}'"}
 
 
-GROQ_MODEL = "llama-3.3-70b-versatile"
+GROQ_MODEL = "openai/gpt-oss-120b"  # verified against /openai/v1/models on this account -- llama-3.3-70b-versatile 404s
 
 
 def _openai_style_tools() -> list[dict]:
@@ -185,12 +185,23 @@ def _openai_style_tools() -> list[dict]:
     ]
 
 
+def _opening_message(question: str, cluster_id: str, context: dict | None) -> str:
+    parts = [f"Cluster under review: {cluster_id}"]
+    if context:
+        if context.get("member_account_ids"):
+            parts.append(f"Member account IDs: {', '.join(context['member_account_ids'])}")
+        for attr, values in (context.get("shared_attribute_values") or {}).items():
+            parts.append(f"Shared {attr} value(s) in this cluster: {', '.join(values)}")
+    parts.append(f"\nReviewer's question: {question}")
+    return "\n".join(parts)
+
+
 def _investigate_anthropic(api_key: str, question: str, cluster_id: str, *,
-                            accounts: pd.DataFrame, cluster_df: pd.DataFrame, clf) -> dict:
+                            accounts: pd.DataFrame, cluster_df: pd.DataFrame, clf, context: dict | None = None) -> dict:
     import anthropic
     client = anthropic.Anthropic(api_key=api_key)
 
-    messages = [{"role": "user", "content": f"Cluster under review: {cluster_id}\n\nReviewer's question: {question}"}]
+    messages = [{"role": "user", "content": _opening_message(question, cluster_id, context)}]
     trace = []
 
     for _ in range(MAX_TOOL_TURNS):
@@ -219,14 +230,14 @@ def _investigate_anthropic(api_key: str, question: str, cluster_id: str, *,
 
 
 def _investigate_groq(api_key: str, question: str, cluster_id: str, *,
-                       accounts: pd.DataFrame, cluster_df: pd.DataFrame, clf) -> dict:
+                       accounts: pd.DataFrame, cluster_df: pd.DataFrame, clf, context: dict | None = None) -> dict:
     import groq
     client = groq.Groq(api_key=api_key)
     tools = _openai_style_tools()
 
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": f"Cluster under review: {cluster_id}\n\nReviewer's question: {question}"},
+        {"role": "user", "content": _opening_message(question, cluster_id, context)},
     ]
     trace = []
 
@@ -250,17 +261,24 @@ def _investigate_groq(api_key: str, question: str, cluster_id: str, *,
             "tool_trace": trace, "provider": "groq"}
 
 
-def investigate(question: str, cluster_id: str, *, accounts: pd.DataFrame, cluster_df: pd.DataFrame, clf) -> dict:
+def investigate(question: str, cluster_id: str, *, accounts: pd.DataFrame, cluster_df: pd.DataFrame, clf,
+                 context: dict | None = None) -> dict:
     # Anthropic first if both happen to be configured, purely because that
     # was the original design target; Groq is equally supported, not a
     # fallback in capability terms -- just second in this if-chain.
+    #
+    # `context` (member account IDs + which attribute values are actually
+    # shared) is optional and additive: without it the agent still works, it
+    # just has to ask the reviewer for values it doesn't have yet -- which is
+    # honest behaviour, not a bug, but a worse experience than necessary when
+    # the caller already has this information sitting in cluster_df/accounts.
     anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
     groq_key = os.environ.get("GROQ_API_KEY")
 
     if anthropic_key:
-        return _investigate_anthropic(anthropic_key, question, cluster_id, accounts=accounts, cluster_df=cluster_df, clf=clf)
+        return _investigate_anthropic(anthropic_key, question, cluster_id, accounts=accounts, cluster_df=cluster_df, clf=clf, context=context)
     if groq_key:
-        return _investigate_groq(groq_key, question, cluster_id, accounts=accounts, cluster_df=cluster_df, clf=clf)
+        return _investigate_groq(groq_key, question, cluster_id, accounts=accounts, cluster_df=cluster_df, clf=clf, context=context)
 
     return {
         "available": False,

@@ -182,10 +182,28 @@ def cluster_ask(cluster_id: str, body: AskRequest):
     clf = joblib.load(model_path)
     g = build_graph(accounts)
     clusters = find_clusters(g)
-    if not any(c.cluster_id == cluster_id for c in clusters):
+    match = next((c for c in clusters if c.cluster_id == cluster_id), None)
+    if not match:
         raise HTTPException(404, f"cluster {cluster_id} not found")
     cluster_df = detector.build_cluster_table(clusters, accounts)
-    result = investigate.investigate(body.question, cluster_id, accounts=accounts, cluster_df=cluster_df, clf=clf)
+
+    # Without this, the agent knows only a cluster_id and has to guess at (or
+    # ask the reviewer for) the actual account IDs and attribute values before
+    # it can call find_shared_attribute_matches -- caught live, during manual
+    # verification, when it correctly refused to guess and asked back instead
+    # of investigating. Giving it the real member IDs and shared attribute
+    # values up front is not new capability, just removing an unnecessary
+    # blind spot before the first tool call.
+    members_df = accounts[accounts["account_id"].isin(match.member_ids)]
+    context = {
+        "member_account_ids": match.member_ids,
+        "shared_attribute_values": {
+            attr: sorted(members_df[attr].unique().tolist())
+            for attr in ["device_fingerprint", "payout_account_hash", "shipping_address_hash", "ip_subnet"]
+            if members_df[attr].nunique() < len(members_df)  # only attrs that are actually shared by someone
+        },
+    }
+    result = investigate.investigate(body.question, cluster_id, accounts=accounts, cluster_df=cluster_df, clf=clf, context=context)
     return result
 
 
