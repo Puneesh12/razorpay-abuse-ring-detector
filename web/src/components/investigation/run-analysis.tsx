@@ -70,7 +70,11 @@ export function RunAnalysis({ onComplete }: RunAnalysisProps) {
     <div className="flex items-center gap-2">
       <button
         onClick={run}
-        className="inline-flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-[13px] font-semibold text-brand-foreground transition-all duration-150 hover:opacity-90 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97]"
+        className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[13px] font-semibold text-brand-foreground transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97]"
+        style={{
+          background: "linear-gradient(135deg, var(--brand) 0%, color-mix(in oklch, var(--brand) 75%, black) 100%)",
+          boxShadow: "0 4px 20px color-mix(in oklch, var(--brand) 32%, transparent)",
+        }}
       >
         <Play className="size-3.5" />
         Run analysis

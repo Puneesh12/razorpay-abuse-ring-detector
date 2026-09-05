@@ -30,25 +30,27 @@ export default function InvestigatePage() {
     <div className="flex-1 flex flex-col">
       <div className="relative border-b border-border overflow-hidden">
         <div className="page-glow" aria-hidden />
-        <div className="relative mx-auto max-w-[1600px] px-6 py-5 flex flex-wrap items-center gap-x-8 gap-y-3">
+        <div className="relative mx-auto max-w-[1600px] px-6 py-7 flex flex-wrap items-center gap-x-8 gap-y-4">
           <div>
-            <h1 className="font-heading text-[17px] font-medium text-foreground">Network investigation</h1>
-            <p className="text-[12px] text-muted-foreground mt-0.5">
-              {lastRunAt ? `Last analysis ${lastRunAt.toLocaleTimeString()}` : "No analysis run yet"}
+            <h1 className="font-heading text-[26px] md:text-[28px] font-medium text-foreground tracking-tight leading-none">
+              Network investigation
+            </h1>
+            <p className="text-[12.5px] text-muted-foreground mt-2">
+              {lastRunAt ? `Last analysis ${lastRunAt.toLocaleTimeString()}` : "No analysis run yet — click Run analysis to load real data"}
             </p>
           </div>
-          <div className="flex items-center gap-6 text-[12.5px]">
-            <div>
-              <span className="text-muted-foreground">Accounts </span>
-              <span className="font-semibold tabular-nums">{snapshot?.nodes.length ?? "—"}</span>
+          <div className="flex items-center gap-3 text-[12.5px]">
+            <div className="rounded-lg border border-border bg-surface-raised/60 px-3.5 py-2">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Accounts</div>
+              <div className="font-semibold tabular-nums text-[15px]">{snapshot?.nodes.length ?? "—"}</div>
             </div>
-            <div>
-              <span className="text-muted-foreground">Relationships </span>
-              <span className="font-semibold tabular-nums">{relationships}</span>
+            <div className="rounded-lg border border-border bg-surface-raised/60 px-3.5 py-2">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Relationships</div>
+              <div className="font-semibold tabular-nums text-[15px]">{relationships}</div>
             </div>
-            <div>
-              <span className="text-muted-foreground">Flagged clusters </span>
-              <span className="font-semibold tabular-nums">{flaggedClusters}</span>
+            <div className="rounded-lg border border-border bg-surface-raised/60 px-3.5 py-2">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Flagged clusters</div>
+              <div className="font-semibold tabular-nums text-[15px] text-risk-priority">{flaggedClusters}</div>
             </div>
           </div>
           <div className="ml-auto">

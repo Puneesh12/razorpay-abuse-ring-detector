@@ -195,7 +195,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="border-b border-border">
+      {/* One continuous background spanning all four sections below, instead
+          of each section restarting its own gradient -- stacking identical
+          gradients per-section produced a repeating warm/cool/warm/cool
+          banding effect at every seam. */}
+      <div className="ambient-gradient">
+      <section>
         <div className="mx-auto max-w-[1440px] px-6 py-16">
           <p className="text-[11px] font-semibold tracking-widest text-brand uppercase mb-6">See it live</p>
           <div className="grid lg:grid-cols-[1fr_460px] gap-12 items-start">
@@ -260,6 +265,7 @@ export default function LandingPage() {
           </p>
         </div>
       </section>
+      </div>
     </div>
   );
 }

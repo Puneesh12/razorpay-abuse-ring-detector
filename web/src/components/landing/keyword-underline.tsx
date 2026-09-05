@@ -60,7 +60,7 @@ function HandDrawnUnderline() {
  */
 export function KeywordUnderline() {
   return (
-    <section id="evidence" data-underline-trigger className="scroll-mt-20 border-b border-border">
+    <section id="evidence" data-underline-trigger className="scroll-mt-20">
       <div className="mx-auto max-w-[1440px] px-6 py-24 md:py-32">
         <p className="font-heading text-3xl md:text-5xl font-medium leading-[1.3] max-w-3xl">
           <span className="text-muted-foreground">Ring doesn&apos;t hand you a verdict. It hands you the</span>{" "}

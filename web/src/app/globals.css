@@ -58,19 +58,19 @@
 /* Ring is a permanently dark, black/charcoal risk-ops product — not a
    light-mode-first app with a dark toggle. One palette, applied at :root. */
 :root {
-  --background: oklch(0.09 0 0);           /* near-black */
+  --background: oklch(0.20 0.045 258);      /* lighter charcoal-navy, not flat black */
   --foreground: oklch(0.96 0 0);
-  --card: oklch(0.13 0 0);                 /* charcoal */
+  --card: oklch(0.27 0.045 258);             /* raised charcoal-navy */
   --card-foreground: oklch(0.96 0 0);
-  --popover: oklch(0.13 0 0);
+  --popover: oklch(0.27 0.045 258);
   --popover-foreground: oklch(0.96 0 0);
   --primary: oklch(0.96 0 0);
-  --primary-foreground: oklch(0.09 0 0);
-  --secondary: oklch(0.18 0 0);
+  --primary-foreground: oklch(0.20 0.045 258);
+  --secondary: oklch(0.31 0.045 258);
   --secondary-foreground: oklch(0.96 0 0);
-  --muted: oklch(0.16 0 0);
-  --muted-foreground: oklch(0.62 0 0);
-  --accent: oklch(0.18 0 0);
+  --muted: oklch(0.29 0.04 258);
+  --muted-foreground: oklch(0.70 0.015 258);
+  --accent: oklch(0.31 0.045 258);
   --accent-foreground: oklch(0.96 0 0);
   --destructive: oklch(0.63 0.22 27);      /* risk-priority red */
   --border: oklch(1 0 0 / 10%);
@@ -82,11 +82,11 @@
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
   --radius: 0.5rem;
-  --sidebar: oklch(0.11 0 0);
+  --sidebar: oklch(0.24 0.045 258);
   --sidebar-foreground: oklch(0.96 0 0);
   --sidebar-primary: oklch(0.62 0.19 255);
-  --sidebar-primary-foreground: oklch(0.09 0 0);
-  --sidebar-accent: oklch(0.16 0 0);
+  --sidebar-primary-foreground: oklch(0.20 0.045 258);
+  --sidebar-accent: oklch(0.29 0.04 258);
   --sidebar-accent-foreground: oklch(0.96 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
@@ -98,8 +98,8 @@
   --risk-priority: oklch(0.63 0.22 27);   /* red */
   --risk-review: oklch(0.75 0.17 85);     /* amber */
   --risk-cleared: oklch(0.72 0.17 150);   /* green */
-  --surface: oklch(0.09 0 0);
-  --surface-raised: oklch(0.13 0 0);
+  --surface: oklch(0.20 0.045 258);
+  --surface-raised: oklch(0.27 0.045 258);
   /* Warm secondary accent -- used once, for the hero headline's emphasis
      word. Not a risk-state color and not brand blue. */
   --amber-warm: oklch(0.64 0.13 65);
@@ -174,6 +174,31 @@
   width: 640px;
   height: 420px;
   background: radial-gradient(closest-side, oklch(0.62 0.19 255 / 10%), transparent 70%);
+}
+
+/* A soft dusk-sky wash for dark sections below the hero -- echoes the hero
+   photo's blue-to-warm-amber gradient instead of a single flat dark color,
+   without competing with foreground content (very low opacity, huge, soft
+   stops). */
+.ambient-gradient {
+  /* Warm glow bottom-left cooling to blue top-right, like the hero photo's
+     dusk sky -- capped lightness/saturation in the warm zone so white body
+     text over it stays legible (this sits behind real paragraphs, not bare
+     sky). The extra top-down fade to var(--background) stops the section
+     from starting bright right at the seam with whatever's above it (the
+     hero's own bottom edge is flat --background, so cutting straight to a
+     bright diagonal gradient there read as a hard line, not a continuation
+     of the same backdrop). */
+  background:
+    linear-gradient(to bottom, var(--background) 0%, transparent 18%),
+    linear-gradient(
+      45deg,
+      oklch(0.32 0.07 55) 0%,
+      oklch(0.27 0.05 50) 25%,
+      oklch(0.24 0.04 300) 55%,
+      oklch(0.22 0.045 258) 78%,
+      var(--background) 100%
+    );
 }
 
 /* ── Hero entrance animations ── */

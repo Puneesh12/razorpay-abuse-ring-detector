@@ -68,7 +68,7 @@ export function DecisionLoop({ steps }: { steps: Step[] }) {
   }, []);
 
   return (
-    <section ref={sectionRef} id="how-it-works" className="scroll-mt-20 border-b border-border">
+    <section ref={sectionRef} id="how-it-works" className="scroll-mt-20">
       <div className="mx-auto max-w-[1440px] px-6 py-20 md:py-28 grid lg:grid-cols-[minmax(15rem,0.8fr)_minmax(0,1.2fr)] gap-12 lg:gap-20">
         <div className="lg:sticky lg:top-24 self-start">
           <p className="text-[11px] font-semibold tracking-widest text-brand uppercase mb-4">The decision loop</p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import gsap from "gsap";
@@ -31,6 +31,19 @@ export function TopNav() {
   const links = isLanding ? LANDING_LINKS : APP_LINKS;
   const navRef = useRef<HTMLElement>(null);
   const pillRef = useRef<HTMLDivElement>(null);
+  const [scrolled, setScrolled] = useState(false);
+
+  // The landing nav is transparent so it floats over the hero photo, but
+  // once you scroll past the hero there's nothing behind it -- whatever
+  // content is underneath (stats, cards) shows straight through and
+  // overlaps the nav text. Give it a solid backing past a small threshold.
+  useEffect(() => {
+    if (!isLanding) return;
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [isLanding]);
 
   useEffect(() => {
     if (isLanding) return; // anchor links don't have a persistent "active" route
@@ -54,8 +67,12 @@ export function TopNav() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-40",
-        isLanding ? "animate-slide-down bg-transparent" : "border-b border-border bg-background/95 backdrop-blur supports-backdrop-blur:bg-background/80"
+        "sticky top-0 z-40 transition-colors duration-300",
+        isLanding
+          ? scrolled
+            ? "bg-background/45 backdrop-blur-md border-b border-white/10"
+            : "animate-slide-down bg-transparent border-b border-transparent"
+          : "border-b border-border bg-background/95 backdrop-blur supports-backdrop-blur:bg-background/80"
       )}
     >
       <div className={cn("mx-auto flex max-w-[1440px] items-center px-6", isLanding ? "h-20 gap-10" : "h-14 gap-6")}>

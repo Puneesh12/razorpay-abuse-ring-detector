@@ -404,7 +404,10 @@ export function RingGraph({ accounts, selectedId, onSelectAccount, className, mi
   return (
     <div className={className}>
       {!minimal && (
-      <div ref={toolbarRef} className="flex flex-wrap items-center gap-2 mb-3">
+      <div
+        ref={toolbarRef}
+        className="flex flex-wrap items-center gap-2 mb-3 rounded-lg border border-border bg-surface-raised/50 p-2"
+      >
         <div className="relative flex-1 min-w-[160px] max-w-[240px]">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
           <input

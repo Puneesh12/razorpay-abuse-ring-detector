@@ -48,7 +48,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <TooltipProvider delay={150}>
           <TopNav />
-          <main className="flex-1 flex flex-col">{children}</main>
+          <main className="ambient-gradient flex-1 flex flex-col">{children}</main>
           <SiteFooter />
         </TooltipProvider>
       </body>
