@@ -153,3 +153,17 @@ export interface ClusterDetail {
   members: ClusterMember[];
   shared_attributes: SharedAttribute[];
 }
+
+// The investigation assistant (backend/app/core/investigate.py) is read-only
+// by construction -- there is no tool in its schema that can flag, queue, or
+// ban anything. It can only help a reviewer understand a decision already
+// made by policy.py.
+export interface ToolTraceEntry {
+  tool: string;
+  input: Record<string, unknown>;
+  result: Record<string, unknown>;
+}
+
+export type AskResponse =
+  | { available: false; reason: string; tools_available: string[] }
+  | { available: true; answer: string; tool_trace: ToolTraceEntry[] };

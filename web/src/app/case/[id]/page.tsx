@@ -9,6 +9,7 @@ import { useCluster, useMetrics } from "@/hooks/use-api";
 import { ACTION_COLOR, attributeLabel } from "@/lib/entity-graph";
 import { ACTION_LABEL, formatPct, formatHours } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
+import { InvestigationAssistant } from "@/components/investigation/investigation-assistant";
 
 const AUDIT_STAGES = [
   { icon: ScanSearch, label: "Detection", body: "Accounts connected via a shared device, IP, payout instrument, or address were grouped into this cluster by deterministic graph traversal." },
@@ -71,8 +72,10 @@ export default function CaseFilePage() {
           </section>
 
           <section data-reveal className="mb-8">
-            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">Evidence</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Evidence</h2>
+            {/* Minimal icon-in-circle + label grid (no card borders) -- a
+                cleaner, more app-like pattern than a wall of bordered boxes. */}
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-y-5 gap-x-2">
               {[
                 { icon: Users, label: "Linked accounts", value: String(data.features.cluster_size) },
                 // Raw field names like "shipping_address_hash" are exactly the
@@ -86,13 +89,14 @@ export default function CaseFilePage() {
                 { icon: Wallet, label: "Payout reuse", value: formatPct(data.features.payout_reuse_ratio, 0) },
                 { icon: BadgeCheck, label: "KYC-verified", value: formatPct(data.features.kyc_verified_ratio, 0) },
               ].map(({ icon: Icon, label, value }) => (
-                <div
-                  key={label}
-                  className="rounded-lg border border-border bg-surface-raised/60 p-3.5 transition-colors hover:border-brand/40"
-                >
-                  <Icon className="size-3.5 text-brand mb-2" />
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{label}</div>
-                  <div className="text-[13.5px] font-semibold leading-snug break-words">{value}</div>
+                <div key={label} className="flex flex-col items-center text-center gap-2 px-1">
+                  <span className="flex size-11 items-center justify-center rounded-full bg-brand/10 text-brand transition-colors">
+                    <Icon className="size-[18px]" />
+                  </span>
+                  <div>
+                    <div className="text-[13px] font-semibold leading-snug">{value}</div>
+                    <div className="text-[11px] text-muted-foreground leading-snug mt-0.5">{label}</div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -141,6 +145,10 @@ export default function CaseFilePage() {
               </p>
             )}
           </section>
+
+          <div className="mt-8">
+            <InvestigationAssistant clusterId={data.cluster_id} />
+          </div>
         </div>
       )}
     </div>
