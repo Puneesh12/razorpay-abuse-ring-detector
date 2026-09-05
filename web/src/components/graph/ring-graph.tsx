@@ -111,6 +111,9 @@ export function RingGraph({ accounts, selectedId, onSelectAccount, className, mi
         x: 0,
         y: 0,
         size: isAccount ? 5.5 + Math.min(n.degree, 3) : 3.5 + Math.min(n.degree, 2),
+        // Plain risk-colored fill (red/amber/green) -- a separate blue fill
+        // with a risk-colored ring around it read as confusingly close to
+        // the payout-instrument entity color once nodes were small.
         color: isAccount ? ACTION_COLOR[n.account!.action] : ENTITY_COLOR[n.type as Exclude<EntityType, "account">],
         label: isAccount ? n.id.slice(0, 8) : n.label,
         entityType: n.type,
@@ -241,8 +244,9 @@ export function RingGraph({ accounts, selectedId, onSelectAccount, className, mi
       // forceLabel in the reducer below still shows a label for whatever
       // the analyst is actually looking at (hover/selection/search/trace).
       labelRenderedSizeThreshold: 30,
-      labelColor: { color: "#a1a1aa" },
-      defaultEdgeColor: "rgba(255,255,255,0.09)",
+      labelColor: { color: "#52525b" },
+      labelFont: "system-ui, sans-serif",
+      defaultEdgeColor: "rgba(24,24,27,0.35)",
       minCameraRatio: 0.08,
       maxCameraRatio: 3,
     });
@@ -300,17 +304,17 @@ export function RingGraph({ accounts, selectedId, onSelectAccount, className, mi
         return { ...res, hidden: true };
       }
       if (traceNodes) {
-        if (!traceNodes.has(node)) return { ...res, color: "#2a2a2e", label: "" };
+        if (!traceNodes.has(node)) return { ...res, color: "#e4e4e7", label: "" };
         return { ...res, zIndex: 2, size: (res.size ?? 6) + 2, label: res.label, forceLabel: true };
       }
       if (searchLower && !node.toLowerCase().includes(searchLower) && !String(data.label ?? "").toLowerCase().includes(searchLower)) {
-        return { ...res, color: "#242428", label: "" };
+        return { ...res, color: "#ececef", label: "" };
       }
       if (searchLower) {
         return { ...res, forceLabel: true };
       }
       if (neighborhood) {
-        if (!neighborhood.has(node)) return { ...res, color: "#2a2a2e", label: node === focusId ? res.label : "" };
+        if (!neighborhood.has(node)) return { ...res, color: "#e4e4e7", label: node === focusId ? res.label : "" };
         return { ...res, zIndex: 1, forceLabel: node === focusId };
       }
       return res;
@@ -321,11 +325,11 @@ export function RingGraph({ accounts, selectedId, onSelectAccount, className, mi
       const [s, t] = graph.extremities(edge);
       if (traceEdges) {
         if (!traceEdges.has(edge)) return { ...res, hidden: true };
-        return { ...res, color: "#FDE047", size: 2.5, zIndex: 2 };
+        return { ...res, color: "#4338ca", size: 2.5, zIndex: 2 };
       }
       if (neighborhood) {
         if (!(neighborhood.has(s) && neighborhood.has(t))) return { ...res, hidden: true };
-        return { ...res, color: "rgba(255,255,255,0.5)", zIndex: 1 };
+        return { ...res, color: "rgba(24,24,27,0.4)", zIndex: 1 };
       }
       if (showEdgeLabels) {
         return { ...res, label: attributeLabel(data.relation) };
@@ -494,10 +498,19 @@ export function RingGraph({ accounts, selectedId, onSelectAccount, className, mi
         </div>
       )}
 
-      <div ref={graphBoxRef} className="relative rounded-lg border border-border bg-black overflow-hidden" style={{ height }}>
+      <div
+        ref={graphBoxRef}
+        className="relative rounded-lg border border-border overflow-hidden"
+        style={{
+          height,
+          backgroundColor: "#fafafa",
+          backgroundImage: "radial-gradient(circle, #d4d4d8 1px, transparent 1px)",
+          backgroundSize: "20px 20px",
+        }}
+      >
         <div ref={containerRef} className="absolute inset-0" />
         {accounts.length === 0 && !minimal && (
-          <div className="absolute inset-0 flex items-center justify-center text-[13px] text-muted-foreground">
+          <div className="absolute inset-0 flex items-center justify-center text-[13px] text-neutral-400">
             Run analysis to load the graph.
           </div>
         )}

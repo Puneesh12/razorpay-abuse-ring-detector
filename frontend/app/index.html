@@ -121,6 +121,18 @@
   .case-box{background:rgba(253,224,71,.05);border:1px solid rgba(253,224,71,.18);border-radius:8px;padding:11px;margin-bottom:11px;font-family:var(--font)}
   .case-box .tag{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--yellow);font-weight:800;margin-bottom:5px}
   .ev-block{margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)}
+  .ask-box input{
+    flex:1;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;
+    padding:6px 10px;color:var(--white);font-family:var(--font);font-size:11.5px;outline:none;
+  }
+  .ask-box input:focus{border-color:rgba(255,255,255,.3)}
+  .ask-box button{
+    background:var(--yellow);color:var(--void);border:none;border-radius:6px;
+    padding:0 14px;font-size:11.5px;font-weight:700;cursor:pointer;flex-shrink:0;
+  }
+  .ask-box button:disabled{opacity:.5;cursor:not-allowed}
+  .tool-call{color:var(--muted);font-size:10.5px;margin-top:6px}
+  .ask-result{margin-top:8px;color:var(--white)}
 
   table{width:100%;border-collapse:collapse;font-size:11.5px}
   th{text-align:left;color:var(--muted);font-weight:700;padding:5px 8px;border-bottom:1px solid var(--border);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em}
@@ -386,7 +398,10 @@ async function runDetection(){
   await loadMetrics();
 }
 
+let currentClusterId = null;
+
 async function showClusterDetail(clusterId){
+  currentClusterId = clusterId;
   document.getElementById("detail-label").textContent = clusterId;
   const el = document.getElementById("detail");
   el.innerHTML = '<div class="empty">Loading…</div>';
@@ -399,7 +414,44 @@ async function showClusterDetail(clusterId){
     <div style="margin-top:6px"><b>shared:</b> ${d.shared_attributes.join(", ")}</div>
     <div class="ev-block"><b>features:</b><br>${Object.entries(d.features).map(([k,v])=>`${k}: ${v}`).join("<br>")}</div>
     <div class="ev-block"><b>members (${d.members.length}):</b><br>${d.members.map(m=>`${m.account_id} · refund ${(m.refund_rate*100).toFixed(0)}% · kyc ${m.kyc_verified}`).join("<br>")}</div>
+    <div class="ev-block ask-box">
+      <b>Ask the investigation assistant</b>
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <input id="ask-input" type="text" placeholder="e.g. has this device shown up anywhere else?" />
+        <button id="ask-btn" onclick="askAboutCluster()">Ask</button>
+      </div>
+      <div id="ask-answer"></div>
+    </div>
   `;
+  document.getElementById("ask-input").addEventListener("keydown", (e) => {
+    if(e.key === "Enter") askAboutCluster();
+  });
+}
+
+async function askAboutCluster(){
+  const input = document.getElementById("ask-input");
+  const btn = document.getElementById("ask-btn");
+  const out = document.getElementById("ask-answer");
+  const question = input.value.trim();
+  if(!question || !currentClusterId) return;
+  btn.disabled = true; btn.textContent = "…";
+  out.innerHTML = '<div class="empty">Investigating…</div>';
+  try{
+    const r = await fetch(API + "/api/cluster/" + currentClusterId + "/ask", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({question}),
+    });
+    const d = await r.json();
+    if(d.available === false){
+      out.innerHTML = `<div class="empty">${d.reason}</div>`;
+    } else {
+      const trace = (d.tool_trace || []).map(t => `<div class="tool-call">→ ${t.tool}(${JSON.stringify(t.input)})</div>`).join("");
+      out.innerHTML = `<div class="tool-trace">${trace}</div><div class="ask-result">${d.answer}</div>`;
+    }
+  }catch(e){
+    out.innerHTML = '<div class="empty">Could not reach the investigation assistant.</div>';
+  }
+  btn.disabled = false; btn.textContent = "Ask";
 }
 
 let animId = null;

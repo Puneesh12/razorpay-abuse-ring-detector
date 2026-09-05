@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import gsap from "gsap";
-import { ArrowLeft, ShieldCheck, ScanSearch, FileText, Gavel, Users, Link2, Clock, RotateCcw, Smartphone, Wallet, BadgeCheck } from "lucide-react";
+import { ArrowLeft, ShieldCheck, ScanSearch, FileText, Gavel, Users, Link2, Clock, RotateCcw, Smartphone, Wallet, BadgeCheck, Check } from "lucide-react";
 import { useCluster, useMetrics } from "@/hooks/use-api";
 import { ACTION_COLOR, attributeLabel } from "@/lib/entity-graph";
 import { ACTION_LABEL, formatPct, formatHours } from "@/lib/format";
@@ -66,16 +66,16 @@ export default function CaseFilePage() {
 
           <section data-reveal className="mb-8">
             <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">Summary</h2>
-            <p className="text-[14px] leading-relaxed text-foreground/90 rounded-lg border border-border bg-surface-raised/50 p-4">
+            <p className="text-[14px] leading-relaxed text-neutral-800 rounded-xl border border-neutral-200 bg-white shadow-sm p-4">
               {data.case_file}
             </p>
           </section>
 
           <section data-reveal className="mb-8">
             <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Evidence</h2>
-            {/* Minimal icon-in-circle + label grid (no card borders) -- a
-                cleaner, more app-like pattern than a wall of bordered boxes. */}
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-y-5 gap-x-2">
+            {/* White key-value panel, matching the /investigate inspector --
+                a real structured record, not a wall of cards or prose. */}
+            <div className="rounded-xl border border-neutral-200 bg-white text-neutral-900 shadow-sm overflow-hidden px-4">
               {[
                 { icon: Users, label: "Linked accounts", value: String(data.features.cluster_size) },
                 // Raw field names like "shipping_address_hash" are exactly the
@@ -89,14 +89,12 @@ export default function CaseFilePage() {
                 { icon: Wallet, label: "Payout reuse", value: formatPct(data.features.payout_reuse_ratio, 0) },
                 { icon: BadgeCheck, label: "KYC-verified", value: formatPct(data.features.kyc_verified_ratio, 0) },
               ].map(({ icon: Icon, label, value }) => (
-                <div key={label} className="flex flex-col items-center text-center gap-2 px-1">
-                  <span className="flex size-11 items-center justify-center rounded-full bg-brand/10 text-brand transition-colors">
-                    <Icon className="size-[18px]" />
+                <div key={label} className="flex items-center justify-between gap-4 py-3 border-b border-neutral-100 last:border-0">
+                  <span className="text-[13px] text-neutral-500">{label}</span>
+                  <span className="flex items-center gap-1.5 text-[13px] font-medium text-neutral-900 text-right">
+                    <Icon className="size-3.5 text-neutral-400 shrink-0" />
+                    {value}
                   </span>
-                  <div>
-                    <div className="text-[13px] font-semibold leading-snug">{value}</div>
-                    <div className="text-[11px] text-muted-foreground leading-snug mt-0.5">{label}</div>
-                  </div>
                 </div>
               ))}
             </div>
@@ -104,17 +102,17 @@ export default function CaseFilePage() {
 
           <section data-reveal className="mb-8">
             <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">Policy decision</h2>
-            <div className="rounded-lg border border-border bg-surface-raised/50 p-4">
+            <div className="rounded-xl border border-neutral-200 bg-white shadow-sm p-4">
               <span className="font-mono text-[13px] font-semibold" style={{ color: ACTION_COLOR[data.action] }}>{data.action}</span>
-              <p className="text-[13px] text-muted-foreground mt-1.5">{data.reason}</p>
+              <p className="text-[13px] text-neutral-500 mt-1.5">{data.reason}</p>
             </div>
           </section>
 
           <section data-reveal className="mb-8">
-            <div className="rounded-lg border border-border bg-surface-raised/40 p-4 flex gap-3">
+            <div className="rounded-xl border border-neutral-200 bg-white shadow-sm p-4 flex gap-3">
               <ShieldCheck className="size-4 shrink-0 text-brand mt-0.5" />
-              <p className="text-[12.5px] text-foreground/90 leading-relaxed">
-                <span className="font-semibold">Safety.</span> Ring cannot ban, freeze, suspend, or take a financial
+              <p className="text-[12.5px] text-neutral-700 leading-relaxed">
+                <span className="font-semibold text-neutral-900">Safety.</span> Ring cannot ban, freeze, suspend, or take a financial
                 action. This case file only ever produces a review-queue recommendation — a human always makes the
                 final decision.
               </p>
@@ -123,27 +121,37 @@ export default function CaseFilePage() {
 
           <section data-reveal>
             <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Audit trail</h2>
-            <ol className="space-y-4">
-              {AUDIT_STAGES.map((s) => (
-                <li key={s.label} className="flex gap-3">
-                  <div className="flex flex-col items-center">
-                    <div className="flex size-6 items-center justify-center rounded-full bg-secondary shrink-0">
-                      <s.icon className="size-3.5 text-foreground" />
+            <div className="rounded-xl border border-neutral-200 bg-white text-neutral-900 shadow-sm p-5">
+              <ol>
+                {AUDIT_STAGES.map((s, i) => (
+                  <li key={s.label} className="relative flex gap-4 pb-7 last:pb-0">
+                    {i < AUDIT_STAGES.length - 1 && (
+                      <span
+                        className="absolute left-5 top-10 bottom-0 w-px"
+                        style={{ background: "linear-gradient(to bottom, color-mix(in oklch, var(--brand) 45%, transparent), var(--color-neutral-200, #e5e5e5))" }}
+                        aria-hidden
+                      />
+                    )}
+                    <div className="relative z-10 flex size-10 shrink-0 items-center justify-center rounded-full border border-brand/25 bg-brand/10 text-brand">
+                      <s.icon className="size-[18px]" />
+                      <span className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full border-2 border-white bg-emerald-500">
+                        <Check className="size-2.5 text-white" strokeWidth={3} />
+                      </span>
                     </div>
-                    <div className="w-px flex-1 bg-border mt-1" />
-                  </div>
-                  <div className="pb-2">
-                    <div className="text-[13px] font-medium text-foreground">{s.label}</div>
-                    <p className="text-[12px] text-muted-foreground mt-0.5 leading-relaxed">{s.body}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-            {metrics && (
-              <p className="text-[11px] text-muted-foreground mt-1">
-                Model run generated at {new Date(metrics.generated_at).toLocaleString()}.
-              </p>
-            )}
+                    <div className="pt-1">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-brand">Step {i + 1}</span>
+                      <div className="text-[14px] font-semibold text-neutral-900 mt-0.5">{s.label}</div>
+                      <p className="text-[12.5px] text-neutral-500 mt-1 leading-relaxed max-w-md">{s.body}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+              {metrics && (
+                <p className="text-[11px] text-neutral-400 pt-3 border-t border-neutral-100 mt-1">
+                  Model run generated at {new Date(metrics.generated_at).toLocaleString()}.
+                </p>
+              )}
+            </div>
           </section>
 
           <div className="mt-8">

@@ -103,11 +103,15 @@ export const ACTION_COLOR: Record<PolicyAction, string> = {
   no_action: "#4ade80", // green — cleared
 };
 
+// Kept clear of red/amber/green on purpose -- those are ACTION_COLOR, and
+// account nodes are filled directly with their risk color (see
+// ring-graph.tsx), so an entity color from the same family would be
+// mistaken for a risk indicator.
 export const ENTITY_COLOR: Record<Exclude<EntityType, "account">, string> = {
-  device: "#a1a1aa", // zinc-400
-  ip: "#78716c", // stone-500
-  payment: "#8a8a93",
-  address: "#84776a",
+  device: "#06b6d4", // cyan-500
+  ip: "#0d9488", // teal-600
+  payment: "#db2777", // pink-600
+  address: "#7c3aed", // violet-600
 };
 
 export const ENTITY_LABEL: Record<EntityType, string> = {
