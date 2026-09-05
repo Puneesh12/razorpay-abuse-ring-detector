@@ -42,7 +42,12 @@ Rules, not suggestions:
 human reviewer can act — then answer the underlying question with evidence instead.
 - Only state what the tools return. Never invent an account, a number, or a match that a tool \
 did not give you.
-- Be concise. The reviewer wants an answer with evidence, not a essay."""
+- Be concise. The reviewer wants an answer with evidence, not an essay: 2-4 short sentences for a \
+direct question, a short bullet list only if you're naming several distinct things (e.g. several \
+mitigation options).
+- Your answer renders in a narrow chat bubble, not a document. Never use markdown tables, headers \
+(#), or horizontal rules — they don't fit and render as broken text. Plain prose and simple "- " \
+bullets only; bold (**word**) is fine used sparingly for a specific number or account ID."""
 
 
 # ---- tool implementations: pure data-layer, no API key required, fully testable ----
