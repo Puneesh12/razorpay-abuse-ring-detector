@@ -52,20 +52,33 @@ export function TopNav() {
   }, [pathname, isLanding]);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-backdrop-blur:bg-background/80">
+    <header
+      className={cn(
+        "sticky top-0 z-40",
+        isLanding ? "animate-slide-down bg-transparent" : "border-b border-border bg-background/95 backdrop-blur supports-backdrop-blur:bg-background/80"
+      )}
+    >
       <div className={cn("mx-auto flex max-w-[1440px] items-center px-6", isLanding ? "h-20 gap-10" : "h-14 gap-6")}>
-        <Link href="/" className="flex items-center gap-2.5 shrink-0">
-          <img
-            src={api.assetUrl("/assets/razorpay-icon.png")}
-            alt=""
-            width={isLanding ? 22 : 18}
-            height={isLanding ? 22 : 18}
-            className="rounded"
-          />
-          <span className={cn("font-semibold tracking-tight text-foreground", isLanding ? "text-lg" : "text-sm")}>Razorpay</span>
-          <span className={cn("w-px bg-border", isLanding ? "h-5" : "h-4")} />
-          <span className={cn("font-semibold tracking-tight text-brand", isLanding ? "text-lg" : "text-sm")}>Ring</span>
-        </Link>
+        {isLanding ? (
+          <Link href="/" className="flex items-center gap-3 shrink-0">
+            <img src={api.assetUrl("/assets/razorpay-icon.png")} alt="" width={26} height={26} className="object-contain" />
+            <div className="flex flex-col leading-none">
+              <span className="text-foreground text-xs font-semibold uppercase" style={{ letterSpacing: "0.2em" }}>
+                Ring
+              </span>
+              <span className="text-brand text-[10px] font-medium tracking-widest uppercase mt-0.5" style={{ opacity: 0.85 }}>
+                by Razorpay
+              </span>
+            </div>
+          </Link>
+        ) : (
+          <Link href="/" className="flex items-center gap-2.5 shrink-0">
+            <img src={api.assetUrl("/assets/razorpay-icon.png")} alt="" width={18} height={18} className="rounded" />
+            <span className="font-semibold tracking-tight text-foreground text-sm">Razorpay</span>
+            <span className="w-px bg-border h-4" />
+            <span className="font-semibold tracking-tight text-brand text-sm">Ring</span>
+          </Link>
+        )}
 
         <nav ref={navRef} className={cn("relative flex items-center flex-1", isLanding ? "gap-8" : "gap-1")}>
           {!isLanding && (
@@ -101,8 +114,10 @@ export function TopNav() {
         <Link
           href="/investigate"
           className={cn(
-            "inline-flex items-center rounded-full border border-border font-semibold uppercase tracking-wider text-foreground transition-colors hover:border-brand hover:text-brand",
-            isLanding ? "px-5 py-2 text-[13px]" : "px-4 py-1.5 text-[12px]"
+            "inline-flex items-center transition-all duration-200",
+            isLanding
+              ? "gap-2 rounded-full border border-white/10 bg-white/10 px-5 py-2.5 text-[13px] font-medium text-foreground backdrop-blur-sm hover:bg-white/[0.15]"
+              : "rounded-full border border-border px-4 py-1.5 text-[12px] font-semibold uppercase tracking-wider text-foreground hover:border-brand hover:text-brand"
           )}
         >
           Demo

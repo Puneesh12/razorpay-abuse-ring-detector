@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Fraunces } from "next/font/google";
+import { Geist, Geist_Mono, Fraunces, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { TopNav } from "@/components/navigation/top-nav";
@@ -25,6 +25,15 @@ const fraunces = Fraunces({
   style: ["normal"],
 });
 
+// Used only for the landing hero headline (italic emphasis word), matching
+// the reference design's editorial tone -- not used anywhere else.
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-hero-serif",
+  subsets: ["latin"],
+  weight: "400",
+  style: ["normal", "italic"],
+});
+
 export const metadata: Metadata = {
   title: "Ring — AI Risk Intelligence",
   description: "Find the network behind the risk. Independent build for the Razorpay AI Buildathon, Track 2.",
@@ -34,7 +43,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} ${instrumentSerif.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <TooltipProvider delay={150}>

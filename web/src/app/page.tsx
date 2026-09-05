@@ -88,72 +88,110 @@ export default function LandingPage() {
   return (
     <div className="flex-1">
       {/* ── Hero ─────────────────────────────────────────────────────── */}
-      <section id="problem" className="scroll-mt-20 relative border-b border-border overflow-hidden min-h-[720px] flex items-center">
+      {/* -mt-20 pulls the photo up underneath the transparent landing nav
+          (which stays a normal sticky/in-flow element, not position:absolute
+          -- that broke the logo layout the last time this was tried) so the
+          header reads as floating over one continuous image instead of a
+          separate solid bar stacked on top of it. */}
+      <section id="problem" className="scroll-mt-20 relative -mt-20 border-b border-border overflow-hidden min-h-[760px] flex flex-col justify-end">
         <Image
-          src="/assets/hero-photo.png"
+          src="/assets/hero-skyline.png"
           alt=""
           aria-hidden
           fill
           priority
           sizes="100vw"
-          className="object-cover"
+          className="object-cover object-center animate-ken-burns"
         />
-        {/* The source photo has its own headline/CTA copy baked into it
-            (it's a flattened screenshot, not a layered file) roughly up to
-            the horizontal midpoint -- a single, precisely-stopped linear
-            gradient covers that fully, then fades quickly so the shop
-            interior on the right stays clearly visible, matching the
-            reference. (Deliberately not `filter: blur()`: that on a sibling
-            of the GSAP-transformed hero text triggered a real Chromium/
-            WebKit compositing bug that double-painted the text.) */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(90deg, var(--background) 0%, var(--background) 50%, color-mix(in oklch, var(--background) 35%, transparent) 60%, transparent 72%)",
+              "linear-gradient(to right, transparent 20%, color-mix(in oklch, var(--background) 18%, transparent) 42%, color-mix(in oklch, var(--background) 62%, transparent) 62%, color-mix(in oklch, var(--background) 88%, transparent) 80%, color-mix(in oklch, var(--background) 95%, transparent) 100%)",
           }}
           aria-hidden
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background/50 via-transparent to-transparent" aria-hidden />
-        <div ref={heroRef} className="relative mx-auto w-full max-w-[1440px] px-6 py-20 md:py-28">
-          <div>
-            <div className="max-w-2xl">
-              <div data-reveal className="text-[11px] font-semibold tracking-widest text-brand uppercase mb-5">
-                A safer payments ecosystem
+        <div
+          className="absolute bottom-0 left-0 right-0 h-48"
+          style={{ background: "linear-gradient(to top, color-mix(in oklch, var(--background) 90%, transparent) 0%, transparent 100%)" }}
+          aria-hidden
+        />
+
+        <div ref={heroRef} className="relative mx-auto w-full max-w-[1440px] px-6 pb-20 md:pb-28 pt-40">
+          <div className="ml-auto w-full md:w-[52%] lg:w-[42%]">
+            <div data-reveal className="flex items-center gap-2.5 mb-6">
+              <span className="h-px w-4 bg-brand inline-block" />
+              <span className="text-brand text-[11px] font-semibold tracking-[0.16em] uppercase">AI Risk Intelligence</span>
+            </div>
+
+            <h1
+              data-reveal
+              className="text-foreground leading-[1.06] mb-5 font-medium"
+              style={{ fontFamily: "var(--font-hero-serif)", fontSize: "clamp(2.6rem, 5.5vw, 4.2rem)", letterSpacing: "-0.01em" }}
+            >
+              Stop abuse
+              <br />
+              <em style={{ color: "var(--amber-warm)" }}>before</em> it scales.
+            </h1>
+
+            <p data-reveal className="text-muted-foreground leading-relaxed mb-8 font-light text-[15px] md:text-[17px] max-w-[38ch]">
+              Ring detects coordinated cross-account fraud across the Razorpay network — surfacing the
+              evidence for a human reviewer to act on. It never blocks anyone on its own.
+            </p>
+
+            <div data-reveal className="flex flex-wrap items-center gap-4 mb-14">
+              <Link
+                href="/investigate"
+                className="inline-flex items-center gap-2 text-brand-foreground text-sm font-medium px-6 py-3.5 rounded-full transition-all duration-300 hover:-translate-y-px"
+                style={{
+                  background: "linear-gradient(135deg, var(--brand) 0%, color-mix(in oklch, var(--brand) 75%, black) 100%)",
+                  boxShadow: "0 4px 24px color-mix(in oklch, var(--brand) 28%, transparent)",
+                }}
+              >
+                See Ring in action
+                <span className="cta-arrow">
+                  <ArrowRight className="size-3.5" />
+                </span>
+              </Link>
+              <a
+                href="#how-it-works"
+                className="inline-flex items-center gap-2 text-foreground/75 text-sm font-medium transition-colors duration-200 hover:text-foreground"
+              >
+                See how it works
+                <span className="cta-arrow">
+                  <ArrowRight className="size-3.5" />
+                </span>
+              </a>
+            </div>
+
+            {/* Real metrics only — the same held-out evaluation used everywhere else on this page */}
+            <div data-reveal className="flex flex-wrap gap-x-8 gap-y-4 pt-7 border-t border-border">
+              <div className="flex flex-col gap-0.5">
+                <span className="stat-shimmer font-semibold text-[1.15rem] tracking-tight">
+                  {accounts != null ? Math.round(accountsCount).toLocaleString("en-IN") : "—"}
+                </span>
+                <span className="text-muted-foreground text-xs">accounts analyzed (held-out test)</span>
               </div>
-              <h1 data-reveal className="font-sans text-[2.75rem] md:text-6xl font-bold tracking-tight text-foreground leading-[1.05]">
-                <span className="bg-gradient-to-br from-brand to-sky-300 bg-clip-text text-transparent">Ring —</span>
-                <br />
-                your fraud watch buddy.
-              </h1>
-              <p data-reveal className="mt-5 text-[15px] leading-relaxed text-muted-foreground max-w-xl">
-                Detect cross-account abuse rings for Razorpay. Not auto-blocks — just clear,
-                evidence-backed cases for human review.
-              </p>
-              <div data-reveal className="mt-8 flex flex-wrap items-center gap-3">
-                <Link
-                  href="/investigate"
-                  className="inline-flex items-center gap-2 rounded-full bg-brand px-6 py-3 text-[13.5px] font-semibold text-brand-foreground shadow-[0_8px_30px_-8px_oklch(0.62_0.19_255_/_55%)] transition-all duration-150 hover:opacity-90 hover:-translate-y-0.5 hover:shadow-[0_12px_36px_-6px_oklch(0.62_0.19_255_/_65%)] active:translate-y-0 active:scale-[0.98]"
-                >
-                  See Ring in action
-                  <ArrowRight className="size-4" />
-                </Link>
-                <a
-                  href="#how-it-works"
-                  className="inline-flex items-center gap-2 rounded-full border border-border px-6 py-3 text-[13.5px] font-medium text-foreground transition-all duration-150 hover:bg-secondary hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
-                >
-                  How it works
-                </a>
+              <div className="flex flex-col gap-0.5">
+                <span className="stat-shimmer font-semibold text-[1.15rem] tracking-tight">
+                  {precision != null ? formatPct(precisionCount) : "—"}
+                </span>
+                <span className="text-muted-foreground text-xs">held-out precision</span>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <span className="stat-shimmer font-semibold text-[1.15rem] tracking-tight">
+                  {recall != null ? formatPct(recallCount) : "—"}
+                </span>
+                <span className="text-muted-foreground text-xs">held-out recall</span>
               </div>
             </div>
           </div>
+        </div>
 
-          <div data-reveal className="mt-16 flex items-center gap-2">
-            <span className="h-3.5 w-px bg-brand" />
-            <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-              Built for a trusted India
-            </span>
-          </div>
+        <div className="relative z-10 flex items-center justify-between px-6 md:px-16 pb-6 animate-fade-in delay-800">
+          <span className="text-muted-foreground/60 text-xs tracking-wide">
+            Independent build · Razorpay AI Buildathon · Track 2 — not an official Razorpay product
+          </span>
         </div>
       </section>
 
