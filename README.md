@@ -46,7 +46,53 @@ npm run dev    # http://localhost:3000
 
 **Investigation agent (optional):** copy `backend/.env.example` to `backend/.env` and set `ANTHROPIC_API_KEY` or `GROQ_API_KEY`. Neither is required — the core detection pipeline never calls out to any API; only the investigation assistant does, and only when a reviewer asks it something. Without a key it degrades to a clear "not configured" message, never a crash or a faked answer.
 
-## Architecture — the short version
+## Architecture
+
+```mermaid
+flowchart TD
+    subgraph Data["Offline: dataset & training"]
+        DS["dataset.py<br/>synthetic accounts + embedded rings"]:::rules
+        SPLIT["hash-based train / val / test split<br/>disjoint by account_id"]:::rules
+        DS --> SPLIT
+    end
+
+    subgraph Pipeline["Per-request pipeline (backend/app/core/)"]
+        direction TB
+        GRAPH["graph.py — CONNECT<br/>shared device / payout / address<br/>deterministic, networkx"]:::rules
+        DETECT["detector.py — DETECT<br/>GradientBoostingClassifier<br/>scores coordinated vs. coincidental"]:::ml
+        EXPLAIN["explain.py — BUILD EVIDENCE<br/>template case file<br/>(free, no key required)"]:::rules
+        POLICY["policy.py — DECIDE<br/>deterministic gate<br/>ONLY module that can authorize an action"]:::gate
+
+        GRAPH --> DETECT --> EXPLAIN --> POLICY
+    end
+
+    SPLIT -.trains classifier on TRAIN,<br/>evaluates on TEST once.-> DETECT
+
+    POLICY --> OUT{{"no_action<br/>queue_for_review<br/>priority_review"}}:::gate
+
+    subgraph Agent["Investigation agent (on-demand, optional)"]
+        INVESTIGATE["investigate.py<br/>tool-calling loop"]:::llm
+        TOOLS["4 read-only tools:<br/>find_shared_attribute_matches<br/>get_account_history<br/>compare_to_nearest_legit_cluster<br/>get_score_breakdown"]:::rules
+        PROVIDER["Anthropic or Groq<br/>whichever key is set —<br/>degrades to 'not configured', never fakes an answer"]:::llm
+        INVESTIGATE <--> TOOLS
+        INVESTIGATE <--> PROVIDER
+    end
+
+    API["FastAPI (main.py)<br/>/api/graph · /api/cluster/:id · /api/metrics · /api/cluster/:id/ask"]
+    OUT --> API
+    API <--> Agent
+
+    WEB["web/ — Next.js app<br/>landing · network investigation · case detail · evaluation"]
+    API <--> WEB
+
+    classDef rules fill:#1a2230,stroke:#3b4a63,color:#e7edf5
+    classDef ml fill:#123a5e,stroke:#3b82f6,color:#e7edf5
+    classDef llm fill:#3a2c12,stroke:#f59e0b,color:#e7edf5
+    classDef gate fill:#3a1414,stroke:#ef4444,color:#e7edf5
+```
+
+**Reading the colors**: gray = deterministic rules, blue = classical ML, orange = LLM (optional, narration/investigation only), red = the policy gate — the single module in this entire system allowed to authorize a financial-adjacent action. No LLM output and no ML score ever reaches a decision without passing through it.
+
 Four stages, four different tools, because they're four different kinds of problem (full rationale in each module's docstring):
 
 | Stage | Module | Tool | Why |
