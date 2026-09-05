@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import gsap from "gsap";
 import { ChevronDown, ExternalLink } from "lucide-react";
 import { useCluster } from "@/hooks/use-api";
 import { ACTION_COLOR } from "@/lib/entity-graph";
@@ -39,6 +40,16 @@ function strongestEvidence(f: NonNullable<ReturnType<typeof useCluster>["data"]>
 export function Inspector({ clusterId }: InspectorProps) {
   const { data, loading, error } = useCluster(clusterId);
   const [showTechnical, setShowTechnical] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!data || !bodyRef.current) return;
+    gsap.fromTo(
+      bodyRef.current,
+      { opacity: 0, y: 8 },
+      { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }
+    );
+  }, [data]);
 
   if (!clusterId) {
     return (
@@ -68,7 +79,7 @@ export function Inspector({ clusterId }: InspectorProps) {
   const evidence = strongestEvidence(data.features);
 
   return (
-    <div className="space-y-5">
+    <div ref={bodyRef} className="space-y-5">
       <div>
         <div className="flex items-center justify-between mb-1">
           <span className="font-mono text-[12px] text-muted-foreground">{data.cluster_id}</span>
@@ -98,7 +109,9 @@ export function Inspector({ clusterId }: InspectorProps) {
       </div>
 
       <div>
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Why this was flagged</h3>
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+          {data.action === "no_action" ? "Signals considered — none reached the review threshold" : "Why this was flagged"}
+        </h3>
         <ul className="space-y-1.5">
           {evidence.length ? evidence.map((e, i) => (
             <li key={i} className="text-[12.5px] text-foreground/90 leading-relaxed flex gap-2">

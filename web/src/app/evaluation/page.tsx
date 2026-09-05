@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+import gsap from "gsap";
 import { useMetrics } from "@/hooks/use-api";
 import { formatInr, formatPct } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -7,6 +9,18 @@ import { TriangleAlert } from "lucide-react";
 
 function Bar({ label, baseline, ring, format }: { label: string; baseline: number; ring: number; format: (n: number) => string }) {
   const max = Math.max(baseline, ring, 0.0001);
+  const baselineRef = useRef<HTMLDivElement>(null);
+  const ringRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (baselineRef.current) {
+      gsap.fromTo(baselineRef.current, { width: "0%" }, { width: `${(baseline / max) * 100}%`, duration: 0.7, ease: "power3.out" });
+    }
+    if (ringRef.current) {
+      gsap.fromTo(ringRef.current, { width: "0%" }, { width: `${(ring / max) * 100}%`, duration: 0.7, delay: 0.1, ease: "power3.out" });
+    }
+  }, [baseline, ring, max]);
+
   return (
     <div className="mb-4 last:mb-0">
       <div className="flex justify-between text-[12px] mb-1.5">
@@ -16,14 +30,14 @@ function Bar({ label, baseline, ring, format }: { label: string; baseline: numbe
         <div className="flex items-center gap-2">
           <span className="w-14 text-[10.5px] text-muted-foreground shrink-0">Baseline</span>
           <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-            <div className="h-full rounded-full bg-muted-foreground/50" style={{ width: `${(baseline / max) * 100}%` }} />
+            <div ref={baselineRef} className="h-full rounded-full bg-muted-foreground/50" />
           </div>
           <span className="w-16 text-[11px] tabular-nums text-right shrink-0">{format(baseline)}</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="w-14 text-[10.5px] text-foreground shrink-0">Ring</span>
           <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-            <div className="h-full rounded-full bg-brand" style={{ width: `${(ring / max) * 100}%` }} />
+            <div ref={ringRef} className="h-full rounded-full bg-brand" />
           </div>
           <span className="w-16 text-[11px] tabular-nums text-right font-medium shrink-0">{format(ring)}</span>
         </div>
@@ -63,8 +77,9 @@ export default function EvaluationPage() {
   const smallN = nPositives < 30;
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-6 py-10">
-      <h1 className="text-xl font-semibold tracking-tight mb-1">Model evaluation</h1>
+    <div className="relative mx-auto w-full max-w-4xl px-6 py-10 overflow-hidden">
+      <div className="page-glow" aria-hidden />
+      <h1 className="relative font-heading text-[1.6rem] font-medium tracking-tight mb-1">Model evaluation</h1>
       <p className="text-[13px] text-muted-foreground mb-8">
         Every number on this page is measured against the held-out test split — data the model never trained on. Run
         generated {new Date(m.generated_at).toLocaleString()}.

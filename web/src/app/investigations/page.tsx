@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import gsap from "gsap";
 import { useGraph } from "@/hooks/use-api";
 import { ACTION_COLOR } from "@/lib/entity-graph";
-import { ACTION_LABEL, formatPct, topSignal } from "@/lib/format";
+import { formatPct, topSignal } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { GraphCluster, PolicyAction } from "@/types/api";
 
@@ -19,6 +20,7 @@ function CaseRow({ c }: { c: GraphCluster }) {
   return (
     <Link
       href={`/case/${c.cluster_id}`}
+      data-case-row
       className="grid grid-cols-[1fr_90px_90px_1fr_120px] items-center gap-4 px-4 py-3 text-[13px] hover:bg-secondary/50 transition-colors border-b border-border last:border-0"
     >
       <span className="font-mono text-[12.5px] text-foreground truncate">{c.cluster_id}</span>
@@ -33,6 +35,13 @@ function CaseRow({ c }: { c: GraphCluster }) {
 export default function InvestigationsPage() {
   const [split, setSplit] = useState<"test" | "all">("test");
   const { data, loading, error } = useGraph(split, 300);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!data || !listRef.current) return;
+    const rows = listRef.current.querySelectorAll("[data-case-row]");
+    gsap.fromTo(rows, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out", stagger: 0.02 });
+  }, [data, split]);
 
   const grouped = GROUPS.map((g) => ({
     ...g,
@@ -40,10 +49,11 @@ export default function InvestigationsPage() {
   }));
 
   return (
-    <div className="mx-auto w-full max-w-[1100px] px-6 py-10">
-      <div className="flex items-center justify-between mb-6">
+    <div className="relative mx-auto w-full max-w-[1100px] px-6 py-10 overflow-hidden">
+      <div className="page-glow" aria-hidden />
+      <div className="relative flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Cases</h1>
+          <h1 className="font-heading text-[1.6rem] font-medium tracking-tight">Cases</h1>
           <p className="text-[13px] text-muted-foreground mt-1">
             {data ? `${data.clusters.length} clusters scored on the ${split === "test" ? "held-out test" : "full"} split.` : "Loading…"}
           </p>
@@ -65,7 +75,7 @@ export default function InvestigationsPage() {
       {error && <p className="text-destructive text-sm">{error}</p>}
 
       {data && (
-        <div className="space-y-8">
+        <div ref={listRef} className="space-y-8">
           {grouped.map((g) => (
             <section key={g.action}>
               <div className="flex items-center gap-2 mb-2">

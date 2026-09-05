@@ -70,7 +70,7 @@ export function RunAnalysis({ onComplete }: RunAnalysisProps) {
     <div className="flex items-center gap-2">
       <button
         onClick={run}
-        className="inline-flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-[13px] font-semibold text-brand-foreground hover:opacity-90 transition-opacity"
+        className="inline-flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-[13px] font-semibold text-brand-foreground transition-all duration-150 hover:opacity-90 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97]"
       >
         <Play className="size-3.5" />
         Run analysis

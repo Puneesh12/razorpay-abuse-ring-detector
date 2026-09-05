@@ -13,7 +13,6 @@ function attrDiffers(members: { device_fingerprint: string; ip_subnet: string; p
 }
 
 export default function FalsePositivesPage() {
-  const [snapshot, setSnapshot] = useState<GraphSnapshot | null>(null);
   const [candidateId, setCandidateId] = useState<string | null>(null);
   const [loadErr, setLoadErr] = useState<string | null>(null);
 
@@ -21,7 +20,6 @@ export default function FalsePositivesPage() {
     api
       .graph("test", 400)
       .then((data: GraphSnapshot) => {
-        setSnapshot(data);
         // A genuine cleared cluster: no_action, 3+ accounts, connected specifically
         // via a shared address (not a fabricated example — picked from real output).
         const addrClusterIds = new Set(
@@ -51,8 +49,9 @@ export default function FalsePositivesPage() {
   }, [detail]);
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-6 py-10">
-      <h1 className="text-xl font-semibold tracking-tight mb-1">Shared identity signals are evidence, not guilt.</h1>
+    <div className="relative mx-auto w-full max-w-3xl px-6 py-10 overflow-hidden">
+      <div className="page-glow" aria-hidden />
+      <h1 className="relative font-heading text-[1.6rem] font-medium tracking-tight mb-1">Shared identity signals are evidence, not guilt.</h1>
       <p className="text-[13px] text-muted-foreground mb-8 max-w-xl">
         A shared attribute alone is a coincidence a naive rule would punish. Ring only ever flags on{" "}
         <em>coordinated behaviour</em>, not on connection alone. Here is a genuine cleared cluster from the held-out
