@@ -107,7 +107,7 @@ export default function LandingPage() {
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to right, transparent 20%, color-mix(in oklch, var(--background) 18%, transparent) 42%, color-mix(in oklch, var(--background) 62%, transparent) 62%, color-mix(in oklch, var(--background) 88%, transparent) 80%, color-mix(in oklch, var(--background) 95%, transparent) 100%)",
+              "linear-gradient(to right, transparent 32%, color-mix(in oklch, var(--background) 15%, transparent) 52%, color-mix(in oklch, var(--background) 42%, transparent) 68%, color-mix(in oklch, var(--background) 62%, transparent) 85%, color-mix(in oklch, var(--background) 70%, transparent) 100%)",
           }}
           aria-hidden
         />
