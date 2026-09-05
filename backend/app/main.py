@@ -17,8 +17,9 @@ import pandas as pd
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
-from .core import detector, explain, policy
+from .core import detector, explain, investigate, policy
 from .core.graph import build_graph, find_clusters
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
@@ -156,6 +157,30 @@ def cluster_detail(cluster_id: str):
         ],
         "shared_attributes": shared_attrs,
     }
+
+
+class AskRequest(BaseModel):
+    question: str
+
+
+@app.post("/api/cluster/{cluster_id}/ask")
+def cluster_ask(cluster_id: str, body: AskRequest):
+    """Read-only investigation agent. See investigate.py docstring: this can
+    never flag, queue, or change anything -- no such tool exists for it to
+    call. It can only help a reviewer understand a decision already made."""
+    accounts_path = DATA_DIR / "accounts.csv"
+    model_path = DATA_DIR / "model.joblib"
+    if not (accounts_path.exists() and model_path.exists()):
+        raise HTTPException(404, "No evaluation run yet.")
+    accounts = pd.read_csv(accounts_path)
+    clf = joblib.load(model_path)
+    g = build_graph(accounts)
+    clusters = find_clusters(g)
+    if not any(c.cluster_id == cluster_id for c in clusters):
+        raise HTTPException(404, f"cluster {cluster_id} not found")
+    cluster_df = detector.build_cluster_table(clusters, accounts)
+    result = investigate.investigate(body.question, cluster_id, accounts=accounts, cluster_df=cluster_df, clf=clf)
+    return result
 
 
 if FRONTEND_DIR.exists():
